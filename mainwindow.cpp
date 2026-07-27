@@ -912,12 +912,6 @@ void MainWindow::flash()
     } else {
         ui->groupBox->setStyleSheet("");
     }
-
-    if(audioplayer1.isStopped() && audioplayer2.isStopped() && isPlaying && !SayingTimer) {
-        current_play += 1;
-        if(current_play>(playlist.size()-1)) current_play = 0;
-        next();
-    }
 }
 
 void MainWindow::calculateRMS(const QAudioBuffer &buffer)
