@@ -5,9 +5,6 @@
 #include <QMediaPlayer>
 #include <QAudioOutput>
 #include <QAudioBufferOutput>
-#include <QProcess>
-#include <QTimer>
-#include <QElapsedTimer>
 
 class AudioPlayer: public QObject
 {
@@ -51,22 +48,15 @@ class AudioPlayer: public QObject
     private slots:
         void positionChanged(qint64 position);
         void onPlayerError(QMediaPlayer::Error error, const QString &errorString);
-        void onFfplayFinished(int exitCode, QProcess::ExitStatus status);
-        void checkFfplay();
 
     private:
         int current_length = 0;
         QMediaPlayer *player;
         QAudioOutput *audioOutput;
         QAudioBufferOutput *audioBufferOutput = nullptr;
-        QProcess *ffplayProc = nullptr;
-        QTimer *ffplayWatchdog = nullptr;
         QString cleanFilePath;
         bool m_hasError = false;
-        bool m_ffplayPlaying = false;
 
-        void startFfplay(const QString &path);
-        void killFfplay();
         QString transcodeIfNeeded(const QString &file);
 };
 
