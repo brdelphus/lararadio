@@ -25,6 +25,7 @@
 #include <QFileDialog>
 #include <QRandomGenerator>
 #include <QDesktopServices>
+#include <QFile>
 
 
 MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWindow)
@@ -138,6 +139,14 @@ void MainWindow::init()
 
     connect(audioBufferOutput, &QAudioBufferOutput::audioBufferReceived, this, &MainWindow::calculateRMS);
     connect(timeplayer, &QMediaPlayer::mediaStatusChanged, this, &MainWindow::restoreVolumeAudio);
+    connect(timeplayer, &QMediaPlayer::errorOccurred, this, [=](QMediaPlayer::Error, const QString &errorString) {
+        qWarning() << "Timeplayer error:" << errorString;
+        if (SayingTimer) {
+            SayingTimer = false;
+            current_play = (current_play + 1) % playlist.size();
+            next();
+        }
+    });
     //connect(ui->files, &QTreeView::doubleClicked, this, &MainWindow::onFilesItemDoubleClicked);
     //connect(ui->jingle_files, &QTreeView::doubleClicked, this, &MainWindow::onJingleFilesItemDoubleClicked);
     connect(ui->audio_list, &QTreeWidget::doubleClicked, this, &MainWindow::onPlaylistItemDoubleClicked);
@@ -770,10 +779,17 @@ void MainWindow::next()
         if(playlist[ current_play ].type=="time" && SayingTimer==false){
             QString say_audio = time_audio_path+"/"+SayTimeAudio+".mp3";
 
-            timeplayer->setSource(QUrl::fromLocalFile(say_audio));
-            timeAudioOutput->setVolume(1);
-            timeplayer->play();
-            SayingTimer=true;
+            if (QFile::exists(say_audio)) {
+                timeplayer->setSource(QUrl::fromLocalFile(say_audio));
+                timeAudioOutput->setVolume(1);
+                timeplayer->play();
+                SayingTimer=true;
+            } else {
+                qWarning() << "Time audio not found:" << say_audio << "- skipping time item";
+                // File doesn't exist: don't set SayingTimer, don't advance.
+                // The flash() watchdog will see both players stopped with
+                // isPlaying && !SayingTimer and advance naturally.
+            }
         }
 
     } else {
