@@ -27,6 +27,13 @@ add dark theme, and improve stability.
   If missing, logs a warning and skips the item without locking the playlist
 - `timeplayer`: connected `errorOccurred` as safety net —
   clears `SayingTimer` and advances on error
+- **Removed redundant playlist advance from `flash()`**: `flash()` (500ms
+  timer) and `checkAdvanceTrack()` (from `playbackFinished`) both independently
+  advanced the playlist with the same `isStopped()` condition. On short tracks
+  (jingles), both could fire in sequence, causing double-advance and repeated
+  playback. The advancement block was removed from `flash()` — it now only
+  handles UI (talk blink, fade indicator, play/stop indicator). Single
+  advancement path: `playbackFinished` → `checkAdvanceTrack()` → `next()`.
 
 ---
 

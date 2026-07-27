@@ -27,6 +27,13 @@ adicionar tema escuro, e melhorar a estabilidade.
   Se não existir, loga warning e pula o item sem travar a playlist
 - `timeplayer`: conectado `errorOccurred` como segurança —
   limpa `SayingTimer` e avança em caso de erro
+- **Removido avanço redundante do `flash()`**: `flash()` (timer de 500ms)
+  e `checkAdvanceTrack()` (do `playbackFinished`) avançavam a playlist
+  independentemente com a mesma condição `isStopped()`. Em faixas curtas
+  (vinhetas), ambos podiam disparar em sequência, causando avanço duplicado
+  e repetição. O bloco de avanço foi removido do `flash()` — agora ele só
+  cuida da interface (piscar talk, indicador de fade, play/stop). Caminho
+  único: `playbackFinished` → `checkAdvanceTrack()` → `next()`.
 
 ---
 
