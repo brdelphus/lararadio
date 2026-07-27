@@ -65,6 +65,11 @@ Fork: https://github.com/brdelphus/lararadio
   `checkAdvanceTrack()` via `playbackFinished`. This prevents race
   conditions on short tracks (jingles) where both mechanisms could
   advance independently.
+- **Silence / audio failure watchdog**: monitors the VU meter via
+  `updateDisplay()` (10ms timer). If a player is in `PlayingState`
+  but no audio reaches the VU meter for 10 seconds (and no fade is
+  active), automatically calls `skipToNext()`. Covers device failure,
+  silent decoder bugs, and stuck pipes.
 
 #### `buttonhole.h`
 - Added explicit `#include <QMediaPlayer>` and `#include <QAudioOutput>`
