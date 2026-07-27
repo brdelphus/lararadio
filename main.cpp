@@ -9,9 +9,38 @@
 #include <QObject>
 #include <QSharedMemory>
 #include <QScreen>
+#include <QMessageBox>
+#include <csignal>
+#include <cstdlib>
+
+// Signal handler for fatal crashes — shows a dialog so the app doesn't silently die
+static void crashHandler(int sig)
+{
+    static bool crashed = false;
+    if (crashed) _exit(128 + sig);  // prevent loops
+    crashed = true;
+
+    // Can't use Qt GUI from signal handler, but fprintf + abort is better than silent SIGSEGV
+    fprintf(stderr, "\n*** LaraRadio crashed (signal %d) ***\n", sig);
+    fprintf(stderr, "This is likely a bug in the FFmpeg audio decoder with certain MP3 files.\n");
+    fprintf(stderr, "Try converting the problematic file or check its integrity.\n");
+    fflush(stderr);
+
+    _exit(128 + sig);
+}
 
 int main(int argc, char *argv[])
 {
+    // Use GStreamer backend (FFmpeg backend has mp3float decoder crash bug)
+    // Hybrid approach: QMediaPlayer (FFmpeg/muted) for UI + ffplay child process for audio
+    // qputenv("QT_MEDIA_BACKEND", QByteArray("gstreamer"));
+    // qputenv("GST_AUDIOSINK", QByteArray("alsasink"));
+
+    // Install crash handlers for FFmpeg decoder bugs
+    signal(SIGSEGV, crashHandler);
+    signal(SIGABRT, crashHandler);
+    signal(SIGFPE, crashHandler);
+
     // qputenv("QT_QPA_PLATFORMTHEME", QByteArray("gtk3"));
     // qputenv("GTK_THEME", QByteArray("Adwaita:dark"));
     // qputenv("QT_QUICK_CONTROLS_STYLE", QByteArray("org.kde.desktop"));
@@ -40,44 +69,44 @@ int main(int argc, char *argv[])
     QSplashScreen splash(pixmapForSplash);
 
 
-    // QStringList styles = QStyleFactory::keys();
+    QStringList styles = QStyleFactory::keys();
 
-    // if (styles.contains("gtk3", Qt::CaseInsensitive)) {
-    //     a.setStyle(QStyleFactory::create("gtk3"));
-    // } else {
-    //     a.setStyle(QStyleFactory::create("Fusion"));
+    if (styles.contains("gtk3", Qt::CaseInsensitive)) {
+        a.setStyle(QStyleFactory::create("gtk3"));
+    } else {
+        a.setStyle(QStyleFactory::create("Fusion"));
 
-    //     QPalette darkPalette;
+        QPalette darkPalette;
 
-    //     // Cores baseadas no tema Adwaita Dark
-    //     QColor backgroundColor(48, 48, 48);
-    //     QColor baseColor(36, 36, 36);
-    //     QColor textColor(220, 220, 220);
-    //     QColor highlightColor(85, 170, 255);
-    //     QColor disabledTextColor(127, 127, 127);
-    //     QColor buttonColor(64, 64, 64);
+        // Cores baseadas no tema Adwaita Dark
+        QColor backgroundColor(48, 48, 48);
+        QColor baseColor(36, 36, 36);
+        QColor textColor(220, 220, 220);
+        QColor highlightColor(85, 170, 255);
+        QColor disabledTextColor(127, 127, 127);
+        QColor buttonColor(64, 64, 64);
 
-    //     darkPalette.setColor(QPalette::Window, backgroundColor);
-    //     darkPalette.setColor(QPalette::WindowText, textColor);
-    //     darkPalette.setColor(QPalette::Base, baseColor);
-    //     darkPalette.setColor(QPalette::AlternateBase, backgroundColor);
-    //     darkPalette.setColor(QPalette::ToolTipBase, textColor);
-    //     darkPalette.setColor(QPalette::ToolTipText, textColor);
-    //     darkPalette.setColor(QPalette::Text, textColor);
-    //     darkPalette.setColor(QPalette::Button, buttonColor);
-    //     darkPalette.setColor(QPalette::ButtonText, textColor);
-    //     darkPalette.setColor(QPalette::BrightText, Qt::red);
-    //     darkPalette.setColor(QPalette::Link, highlightColor);
-    //     darkPalette.setColor(QPalette::Highlight, highlightColor);
-    //     darkPalette.setColor(QPalette::HighlightedText, Qt::black);
+        darkPalette.setColor(QPalette::Window, backgroundColor);
+        darkPalette.setColor(QPalette::WindowText, textColor);
+        darkPalette.setColor(QPalette::Base, baseColor);
+        darkPalette.setColor(QPalette::AlternateBase, backgroundColor);
+        darkPalette.setColor(QPalette::ToolTipBase, textColor);
+        darkPalette.setColor(QPalette::ToolTipText, textColor);
+        darkPalette.setColor(QPalette::Text, textColor);
+        darkPalette.setColor(QPalette::Button, buttonColor);
+        darkPalette.setColor(QPalette::ButtonText, textColor);
+        darkPalette.setColor(QPalette::BrightText, Qt::red);
+        darkPalette.setColor(QPalette::Link, highlightColor);
+        darkPalette.setColor(QPalette::Highlight, highlightColor);
+        darkPalette.setColor(QPalette::HighlightedText, Qt::black);
 
-    //     // Desabilitados
-    //     darkPalette.setColor(QPalette::Disabled, QPalette::Text, disabledTextColor);
-    //     darkPalette.setColor(QPalette::Disabled, QPalette::ButtonText, disabledTextColor);
+        // Desabilitados
+        darkPalette.setColor(QPalette::Disabled, QPalette::Text, disabledTextColor);
+        darkPalette.setColor(QPalette::Disabled, QPalette::ButtonText, disabledTextColor);
 
-    //     a.setPalette(darkPalette);
-    //     a.setStyleSheet("QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white; }");
-    // }
+        a.setPalette(darkPalette);
+        a.setStyleSheet("QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white; }");
+    }
 
     splash.show();
     a.processEvents();

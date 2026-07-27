@@ -77,6 +77,8 @@ public slots:
     void loadPlaylist();
     void loadRecentPlaylist();
     void clearPlaylist();
+    void skipToNext();
+    void checkAdvanceTrack();
 
 private slots:
     void on_btn_play_clicked();

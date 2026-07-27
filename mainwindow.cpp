@@ -162,6 +162,20 @@ void MainWindow::init()
     connect(&audioplayer2, &AudioPlayer::update_position, this, [=](qint64 position) {
         currentTimePosition(position, 2);
     });
+    connect(&audioplayer1, &AudioPlayer::mediaError, this, [=](const QString &file, const QString &err) {
+        qWarning() << "Player1 error on" << file << ":" << err;
+        if (isPlaying) skipToNext();
+    });
+    connect(&audioplayer2, &AudioPlayer::mediaError, this, [=](const QString &file, const QString &err) {
+        qWarning() << "Player2 error on" << file << ":" << err;
+        if (isPlaying) skipToNext();
+    });
+    connect(&audioplayer1, &AudioPlayer::playbackFinished, this, [=]() {
+        if (isPlaying) checkAdvanceTrack();
+    });
+    connect(&audioplayer2, &AudioPlayer::playbackFinished, this, [=]() {
+        if (isPlaying) checkAdvanceTrack();
+    });
 
     ui->version->setText( tr("Versão: ") + QString(APP_VERSION) );
     ui->volume_speak->setValue( volumeToTalk * 100 );
@@ -654,6 +668,26 @@ void MainWindow::restoreVolumeAudio(QMediaPlayer::MediaStatus state)
             if(current_play>(playlist.size()-1)) current_play = 0;
             next();
         }
+    }
+}
+
+void MainWindow::skipToNext()
+{
+    if (playlist.size() == 0) return;
+
+    audioplayer1.Reset();
+    audioplayer2.Reset();
+
+    current_play = (current_play + 1) % playlist.size();
+    next();
+}
+
+void MainWindow::checkAdvanceTrack()
+{
+    if (!isPlaying || playlist.size() == 0) return;
+    if (audioplayer1.isStopped() && audioplayer2.isStopped() && !SayingTimer) {
+        current_play = (current_play + 1) % playlist.size();
+        next();
     }
 }
 
