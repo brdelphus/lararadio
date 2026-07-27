@@ -160,5 +160,6 @@ private:
     bool m_uiReady = false;
     bool m_recentPlaylistLoaded = false;
     QTimer *m_displayTimer = nullptr;
+    int m_silenceMs = 0;
 };
 #endif // MAINWINDOW_H

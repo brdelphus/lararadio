@@ -871,6 +871,28 @@ void MainWindow::updateDisplay() {
 
     vuMeterL->setLevel(currentVU_L);
     vuMeterR->setLevel(currentVU_R);
+
+    // Silence / audio failure watchdog
+    // If a player reports PlayingState but no audio reaches the VU meter
+    // for SILENCE_TIMEOUT ms, treat it as a failure and skip the track.
+    if (isPlaying) {
+        const int SILENCE_TIMEOUT = 10000; // 10 seconds
+        bool vuActive = (currentVU_L > 0 || currentVU_R > 0);
+
+        if (!audioplayer1.isFading && !audioplayer2.isFading && !vuActive) {
+            m_silenceMs += 10; // displayTimer interval
+            if (m_silenceMs >= SILENCE_TIMEOUT) {
+                qWarning() << "Silence watchdog: no audio for" << SILENCE_TIMEOUT
+                           << "ms — skipping track";
+                m_silenceMs = 0;
+                skipToNext();
+            }
+        } else {
+            m_silenceMs = 0;
+        }
+    } else {
+        m_silenceMs = 0;
+    }
 }
 
 void MainWindow::flash()
