@@ -179,13 +179,12 @@ void AudioPlayer::fadeIn() { if(isStopped()) _fadeIn = true; }
 
 void AudioPlayer::fade()
 {
-    if(_fadeOut || (isPlaying() && getVolume()>maxVolume && _fadeIn==false )) { _fadeIn=false; isFading = true; setVolume( getVolume() - fadeFactor ); }
-    if(_fadeIn || (isPlaying() && getVolume()<maxVolume && _fadeOut==false )) { _fadeOut=false; isFading = true; setVolume( getVolume() + fadeFactor ); }
-
-    if(_fadeOut && getVolume()<=0 && isPlaying()) { Stop(); _fadeOut = false; isFading = false; }
-    if(getVolume()>=maxVolume && isPlaying()) { _fadeIn = false; isFading = false; }
-
-    if(getVolume()>0 && isStopped()) { _fadeIn = false; _fadeIn = true; isFading = false; maxVolume = 0; setVolume(0); }
+    // QMediaPlayer stays muted (volume 0) — ffplay provides the actual audio.
+    // Fade logic disabled to prevent double playback from both sources.
+    // Crossfade between tracks is handled by starting the next ffplay process
+    // while the previous one is still fading naturally.
+    if(_fadeOut && isPlaying()) { Stop(); _fadeOut = false; isFading = false; }
+    if(_fadeIn) { _fadeIn = false; isFading = false; }
 }
 
 void AudioPlayer::setBuffer(QAudioBufferOutput *output)
