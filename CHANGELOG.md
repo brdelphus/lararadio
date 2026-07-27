@@ -1,96 +1,127 @@
-# Changelog — Modificações no LaraRadio
+# Changelog — LaraRadio Modifications
 
-Todas as alterações feitas no código-fonte para corrigir crashes,
-adicionar tema escuro, e melhorar a estabilidade.
+All source code changes made to fix crashes,
+add dark theme, and improve stability.
+
+---
+
+## [1.0.5] — 2026-07-27
+
+### Fixed
+
+#### `audioplayer.h` / `audioplayer.cpp`
+- **Removed ffplay hybrid system** that caused double audio playback:
+  - QMediaPlayer (muted) + ffplay (child process) played the same
+    audio simultaneously
+  - ffplay removed: `QProcess`, `watchdog`, `onFfplayFinished`,
+    `checkFfplay`, `killFfplay`, `startFfplay`
+- **QMediaPlayer is now the sole audio source**, with volume controlled
+  via `QAudioOutput` — fade/crossfade works correctly
+- `transcodeIfNeeded()` kept: converts MP3 with album art to WAV,
+  preventing the `mp3float` decoder crash
+- `playbackFinished` now emitted via `QMediaPlayer::EndOfMedia`
+- `isPlaying()` / `isStopped()` use `QMediaPlayer::playbackState()`
+
+#### `mainwindow.cpp`
+- **Time announcement**: checks if audio file exists before playing.
+  If missing, logs a warning and skips the item without locking the playlist
+- `timeplayer`: connected `errorOccurred` as safety net —
+  clears `SayingTimer` and advances on error
 
 ---
 
 ## [1.0.4] — 2026-07-25
 
-### Adicionado
+### Added
 
 #### `audioplayer.h`
-- `hasError()` — flag pública de estado de erro
-- `mediaError(file, errorMsg)` — sinal emitido quando o QMediaPlayer reporta erro
-- `onPlayerError(error, errorString)` — slot privado para capturar erros do player
-- `playbackFinished()` — sinal emitido quando o ffplay termina de tocar
-- `isValidMediaFile(path)` — método estático que valida arquivo com `ffprobe`
-- `audioBufferOutput` — ponteiro armazenado para reconectar após Reset()
-- `ffplayProc` — QProcess para tocar áudio em processo filho
-- `ffplayWatchdog` — timer que detecta se o ffplay morreu inesperadamente
-- `cleanFilePath` — path do arquivo transcodificado
-- `m_ffplayPlaying` — flag de estado do ffplay
-- `transcodeIfNeeded()` — método privado para transcodificar MP3 com album art
-- `startFfplay()` / `killFfplay()` — gerenciamento do processo filho
-- `onFfplayFinished()` — trata término do ffplay
-- `checkFfplay()` — watchdog que detecta morte silenciosa do ffplay
+- `hasError()` — public error state flag
+- `mediaError(file, errorMsg)` — signal emitted when QMediaPlayer reports an error
+- `onPlayerError(error, errorString)` — private slot to capture player errors
+- `playbackFinished()` — signal emitted when ffplay finishes
+- `isValidMediaFile(path)` — static method validating file with `ffprobe`
+- `audioBufferOutput` — stored pointer for reconnection after Reset()
+- `ffplayProc` — QProcess for audio playback in child process
+- `ffplayWatchdog` — timer detecting unexpected ffplay death
+- `cleanFilePath` — path to the transcoded file
+- `m_ffplayPlaying` — ffplay state flag
+- `transcodeIfNeeded()` — private method to transcode MP3 with album art
+- `startFfplay()` / `killFfplay()` — child process management
+- `onFfplayFinished()` — handles ffplay termination
+- `checkFfplay()` — watchdog detecting silent ffplay death
 
 #### `audioplayer.cpp`
-- Inclusão de `<QProcess>`, `<QFileInfo>`, `<QDir>`
-- Conexão de `QMediaPlayer::errorOccurred` → `onPlayerError()`
-- Conexão de `QMediaPlayer::mediaStatusChanged` → detecta `InvalidMedia`
-- `addMedia()` — transcodifica MP3s para WAV temporário via `ffmpeg -vn`,
-  removendo album art embedado que causa crash no decoder `mp3float`
-- Implementação do sistema híbrido:
-  - QMediaPlayer roda **mudo** (volume 0), servindo apenas VU meter, seek e posição
-  - `startFfplay()` lança `ffplay -nodisp -autoexit` em **processo filho**
-  - Cada música = processo ffplay novo, que morre ao final sem acumular estado
-- `playbackFinished` é emitido quando ffplay termina (via `finished` signal + watchdog)
-- `Reset()` — agora também mata o ffplay e limpa a source do QMediaPlayer
-- Destrutor — limpa ffplay e QMediaPlayer
-- `isValidMediaFile()` — valida com ffprobe antes de tocar
-- `onPlayerError()` — loga e emite sinal `mediaError`
+- Added `<QProcess>`, `<QFileInfo>`, `<QDir>`
+- Connected `QMediaPlayer::errorOccurred` → `onPlayerError()`
+- Connected `QMediaPlayer::mediaStatusChanged` → detect `InvalidMedia`
+- `addMedia()` — transcodes MP3s to temporary WAV via `ffmpeg -vn`,
+  stripping embedded album art that crashes the `mp3float` decoder
+- Hybrid system implementation:
+  - QMediaPlayer runs **muted** (volume 0), serving only VU meter, seek, position
+  - `startFfplay()` launches `ffplay -nodisp -autoexit` as a **child process**
+  - Each track = new ffplay process, dies cleanly at end with no accumulated state
+- `playbackFinished` emitted when ffplay finishes (via `finished` signal + watchdog)
+- `Reset()` — now also kills ffplay and clears QMediaPlayer source
+- Destructor — cleans up ffplay and QMediaPlayer
+- `isValidMediaFile()` — validates with ffprobe before playing
+- `onPlayerError()` — logs and emits `mediaError` signal
 
 #### `buttonhole.h`
-- Inclusão de `<QMediaPlayer>` e `<QAudioOutput>` (estavam sendo puxados
-  indiretamente via `audioplayer.h`, que mudou de `QMediaPlayer` para `QObject`)
+- Added `<QMediaPlayer>` and `<QAudioOutput>` (were being pulled
+  indirectly via `audioplayer.h`, which changed from `QMediaPlayer` to `QObject`)
 
 #### `main.cpp`
-- Inclusão de `<QMessageBox>`, `<csignal>`, `<cstdlib>`
-- `crashHandler(sig)` — signal handler para SIGSEGV/SIGABRT/SIGFPE:
-  - Previne loops com flag estática
-  - Imprime mensagem descritiva no stderr
-  - Sai com código `128 + sig`
-- Instalação dos handlers no início da `main()`
-- **Tema escuro Fusion** (código existia comentado, foi ativado):
-  - Palette escura `#303030` fundo, `#242424` base, `#dcdcdc` texto
-  - Highlight azul `#55aaff`
-  - Tooltip azul escuro com borda branca
-  - GTK3 detectado automaticamente se disponível
+- Added `<QMessageBox>`, `<csignal>`, `<cstdlib>`
+- `crashHandler(sig)` — signal handler for SIGSEGV/SIGABRT/SIGFPE:
+  - Prevents loops with static flag
+  - Prints descriptive message to stderr
+  - Exits with code `128 + sig`
+- Handler installation at the start of `main()`
+- **Fusion dark theme** (code existed commented out, now enabled):
+  - Dark palette `#303030` background, `#242424` base, `#dcdcdc` text
+  - Blue highlight `#55aaff`
+  - Dark blue tooltip with white border
+  - GTK3 detected automatically if available
 
 #### `mainwindow.h`
-- `skipToNext()` — pula para próxima faixa quando a atual falha
-- `checkAdvanceTrack()` — avança na playlist quando o ffplay termina
+- `skipToNext()` — skips to next track when current one fails
+- `checkAdvanceTrack()` — advances playlist when ffplay finishes
 
 #### `mainwindow.cpp`
-- `audioBufferOutput` restaurado (VU meter ativo)
-- Conexão de `mediaError` → chama `skipToNext()` automaticamente
-- Conexão de `playbackFinished` → chama `checkAdvanceTrack()`
-- `skipToNext()` — reseta ambos players, avança índice, chama `next()`
-- `checkAdvanceTrack()` — avança se ambos players parados e sem timer ativo
+- `audioBufferOutput` restored (VU meter active)
+- Connected `mediaError` → calls `skipToNext()` automatically
+- Connected `playbackFinished` → calls `checkAdvanceTrack()`
+- `skipToNext()` — resets both players, advances index, calls `next()`
+- `checkAdvanceTrack()` — advances if both players stopped and no timer active
 
-### Removido
+### Removed
 
-- Bloco de validação `isValidMediaFile()` no `next()` (duplicado — a
-  validação é feita dentro de `addMedia()`)
-- Código comentado do tema escuro (agora ativo)
+- Redundant `isValidMediaFile()` validation block in `next()` (validation
+  is now done inside `addMedia()`)
+- Commented-out dark theme code (now active)
 
-### Arquitetura
+### Architecture
 
-**Antes:**
+**Before (version 1.0.3):**
 ```
-QMediaPlayer (FFmpeg) → toca áudio + UI (VU/seek)
+QMediaPlayer (FFmpeg) → plays audio + UI (VU/seek)
          ↓
-   decoder mp3float acumula estado → CRASH após N músicas
+   mp3float decoder accumulates state → CRASH after N tracks
 ```
 
-**Depois:**
+**After (version 1.0.4, ffplay hybrid system):**
 ```
-QMediaPlayer (FFmpeg, mudo) → só UI (VU/seek/posição)
-ffplay (processo filho)     → áudio real, morre a cada música
+QMediaPlayer (FFmpeg, muted) → UI only (VU/seek/position)
+ffplay (child process)       → actual audio, dies per track
 
-MP3 com album art → ffmpeg -vn → WAV temporário → QMediaPlayer + ffplay
+MP3 with album art → ffmpeg -vn → temporary WAV → QMediaPlayer + ffplay
 ```
 
-Isolamento total: o decoder `mp3float` nunca toca áudio, e cada ffplay
-começa do zero sem estado acumulado.
+**Now (version 1.0.5, simplified system):**
+```
+MP3 with album art → ffmpeg -vn → temporary WAV → QMediaPlayer (audio + UI)
+
+transcodeIfNeeded() prevents the mp3float crash.
+Fade/crossfade between two players with independent QAudioOutput.
+No ffplay — no double audio.
+```
