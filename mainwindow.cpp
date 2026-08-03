@@ -281,6 +281,11 @@ void MainWindow::changeLanguage(QString lang)
 
 void MainWindow::clearPlaylist()
 {
+    audioplayer1.Reset();
+    audioplayer2.Reset();
+    isPlaying = false;
+    current_play = 0;
+    next_play = 0;
     playlist.clear();
     updateAudioList();
 }
@@ -364,7 +369,14 @@ void MainWindow::updateClockLabel(QString text_time)
 void MainWindow::on_btn_remove_item_clicked()
 {
     int row = ui->audio_list->currentIndex().row();
+    if (row < 0 || row >= (int)playlist.size())
+        return;
     playlist.erase( playlist.begin() + row);
+    // Keep current_play/next_play valid after the playlist shrank
+    if (current_play >= (int)playlist.size()) current_play = playlist.size() - 1;
+    if (next_play >= (int)playlist.size()) next_play = playlist.size() - 1;
+    if (current_play < 0) current_play = 0;
+    if (next_play < 0) next_play = 0;
     updateAudioList();
 }
 
@@ -703,6 +715,8 @@ void MainWindow::checkAdvanceTrack()
 void MainWindow::next()
 {
     if(playlist.size()>0){
+        if (current_play >= (int)playlist.size()) current_play = 0;
+        if (current_play < 0) current_play = 0;
         if(SayingTimer==false){
             isPlaying = true;
 
@@ -843,13 +857,22 @@ void MainWindow::updateAudioList(bool jump)
     }
 
     if(isPlaying){
-        for(int i=0; i<3; i++){
-            ui->audio_list->topLevelItem(current_play)->setBackground(i,QBrush(QColor(5, 223, 114)));
-            ui->audio_list->topLevelItem(current_play)->setForeground(i,Qt::black);
+        // Guard: current_play/next_play can go stale if the playlist was
+        // edited while playing — topLevelItem() returns nullptr for an
+        // invalid row, and dereferencing it is a segfault.
+        QTreeWidgetItem *curItem = (current_play >= 0 && current_play < playlist.size())
+            ? ui->audio_list->topLevelItem(current_play) : nullptr;
+        QTreeWidgetItem *nextItem = (next_play >= 0 && next_play < playlist.size())
+            ? ui->audio_list->topLevelItem(next_play) : nullptr;
 
-            if(next_play!=current_play){
-                ui->audio_list->topLevelItem(next_play)->setForeground(i,Qt::white);
-                ui->audio_list->topLevelItem(next_play)->setBackground(i,QBrush(QColor(255, 100, 103)));
+        for(int i=0; i<3; i++){
+            if (curItem) {
+                curItem->setBackground(i,QBrush(QColor(5, 223, 114)));
+                curItem->setForeground(i,Qt::black);
+            }
+            if (nextItem && next_play!=current_play){
+                nextItem->setForeground(i,Qt::white);
+                nextItem->setBackground(i,QBrush(QColor(255, 100, 103)));
             }
         }
     }
