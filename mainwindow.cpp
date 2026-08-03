@@ -634,10 +634,7 @@ void MainWindow::on_btn_play_clicked()
 
 void MainWindow::on_btn_stop_clicked()
 {
-    if(playlist.size()==0)
-        return;
-
-    if(!audioplayer1.isPlaying() && !audioplayer2.isPlaying())
+    if(playlist.size()==0 && !audioplayer1.isPlaying() && !audioplayer2.isPlaying())
         return;
 
     audioplayer1.Reset();
@@ -817,9 +814,13 @@ void MainWindow::updateAudioList(bool jump)
     int index = ui->audio_list->currentIndex().row();
     ui->audio_list->clear();
 
-    ui->current_audio->setText( "<p align='center'>"+playlist[ current_play ].name+"</p>" );
+    // Guard: playlist can be empty (e.g. cleared/removed while playing)
+    if (!playlist.empty() && current_play >= 0 && current_play < (int)playlist.size())
+        ui->current_audio->setText( "<p align='center'>"+playlist[ current_play ].name+"</p>" );
+    else
+        ui->current_audio->setText( "<p align='center'></p>" );
 
-    if(playlist.size()>current_play && jump==false){
+    if(!playlist.empty() && playlist.size()>current_play && jump==false){
         next_play = current_play + 1;
         if(next_play>(playlist.size()-1)) next_play = 0;
 
