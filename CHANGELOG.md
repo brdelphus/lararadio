@@ -70,6 +70,21 @@ Fork: https://github.com/brdelphus/lararadio
   but no audio reaches the VU meter for 10 seconds (and no fade is
   active), automatically calls `skipToNext()`. Covers device failure,
   silent decoder bugs, and stuck pipes.
+- **Segfault fix on playlist edit while playing**: `clearPlaylist()`
+  emptied the playlist while `isPlaying` stayed true and
+  `current_play` stayed stale, making `topLevelItem()` return
+  nullptr → SIGSEGV. Now: `clearPlaylist()` resets both players and
+  playback state; `updateAudioList()` null-checks `curItem`/`nextItem`
+  before styling; `on_btn_remove_item_clicked()` clamps
+  `current_play`/`next_play` after erase; `next()` clamps
+  `current_play` before indexing.
+- **Stop button works with empty playlist**: removing the last
+  (currently-playing) track left the playlist empty while audio kept
+  playing — `on_btn_stop_clicked()` early-returned on empty playlist
+  and never stopped the players. Now it only early-returns when the
+  playlist is empty **and** no player is playing. Also guarded
+  `playlist[current_play]` access in `updateAudioList()` for the
+  empty case (was out-of-bounds UB).
 
 #### `buttonhole.h`
 - Added explicit `#include <QMediaPlayer>` and `#include <QAudioOutput>`
