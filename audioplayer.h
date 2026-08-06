@@ -1,12 +1,12 @@
 #ifndef AUDIOPLAYER_H
 #define AUDIOPLAYER_H
 
-#include "QMediaPlayer"
-#include "QObject"
-#include "QAudioOutput"
-#include "QAudioBufferOutput"
+#include <QObject>
+#include <QMediaPlayer>
+#include <QAudioOutput>
+#include <QAudioBufferOutput>
 
-class AudioPlayer: public QMediaPlayer
+class AudioPlayer: public QObject
 {
     Q_OBJECT
 
@@ -19,6 +19,7 @@ class AudioPlayer: public QMediaPlayer
         float maxVolume = 1.0f;
 
         AudioPlayer();
+        ~AudioPlayer();
         void Reset();
         void Play();
         void Stop();
@@ -36,22 +37,27 @@ class AudioPlayer: public QMediaPlayer
         void fadeIn();
         void fade();
         void setBuffer(QAudioBufferOutput *output);
+        bool hasError() const { return m_hasError; }
+        static bool isValidMediaFile(const QString &path);
 
     signals:
-        void update_position( qint64 position );
+        void update_position(qint64 position);
+        void playbackFinished();
+        void mediaError(const QString &file, const QString &errorMsg);
 
     private slots:
-        void positionChanged(qint64 position );
+        void positionChanged(qint64 position);
+        void onPlayerError(QMediaPlayer::Error error, const QString &errorString);
 
     private:
-        int current_length;
-
-
-
-
-
+        int current_length = 0;
         QMediaPlayer *player;
         QAudioOutput *audioOutput;
+        QAudioBufferOutput *audioBufferOutput = nullptr;
+        QString cleanFilePath;
+        bool m_hasError = false;
+
+        QString transcodeIfNeeded(const QString &file);
 };
 
 #endif // AUDIOPLAYER_H

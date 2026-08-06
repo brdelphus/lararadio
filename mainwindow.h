@@ -77,6 +77,8 @@ public slots:
     void loadPlaylist();
     void loadRecentPlaylist();
     void clearPlaylist();
+    void skipToNext();
+    void checkAdvanceTrack();
 
 private slots:
     void on_btn_play_clicked();
@@ -158,5 +160,6 @@ private:
     bool m_uiReady = false;
     bool m_recentPlaylistLoaded = false;
     QTimer *m_displayTimer = nullptr;
+    int m_silenceMs = 0;
 };
 #endif // MAINWINDOW_H

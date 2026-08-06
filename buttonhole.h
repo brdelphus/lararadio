@@ -2,6 +2,8 @@
 #define BUTTONHOLE_H
 
 #include "audioplayer.h"
+#include <QMediaPlayer>
+#include <QAudioOutput>
 #include <QWidget>
 #include <QPushButton>
 #include <QSettings>

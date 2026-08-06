@@ -25,6 +25,7 @@
 #include <QFileDialog>
 #include <QRandomGenerator>
 #include <QDesktopServices>
+#include <QFile>
 
 
 MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWindow)
@@ -138,6 +139,14 @@ void MainWindow::init()
 
     connect(audioBufferOutput, &QAudioBufferOutput::audioBufferReceived, this, &MainWindow::calculateRMS);
     connect(timeplayer, &QMediaPlayer::mediaStatusChanged, this, &MainWindow::restoreVolumeAudio);
+    connect(timeplayer, &QMediaPlayer::errorOccurred, this, [=](QMediaPlayer::Error, const QString &errorString) {
+        qWarning() << "Timeplayer error:" << errorString;
+        if (SayingTimer) {
+            SayingTimer = false;
+            current_play = (current_play + 1) % playlist.size();
+            next();
+        }
+    });
     //connect(ui->files, &QTreeView::doubleClicked, this, &MainWindow::onFilesItemDoubleClicked);
     //connect(ui->jingle_files, &QTreeView::doubleClicked, this, &MainWindow::onJingleFilesItemDoubleClicked);
     connect(ui->audio_list, &QTreeWidget::doubleClicked, this, &MainWindow::onPlaylistItemDoubleClicked);
@@ -161,6 +170,20 @@ void MainWindow::init()
     });
     connect(&audioplayer2, &AudioPlayer::update_position, this, [=](qint64 position) {
         currentTimePosition(position, 2);
+    });
+    connect(&audioplayer1, &AudioPlayer::mediaError, this, [=](const QString &file, const QString &err) {
+        qWarning() << "Player1 error on" << file << ":" << err;
+        if (isPlaying) skipToNext();
+    });
+    connect(&audioplayer2, &AudioPlayer::mediaError, this, [=](const QString &file, const QString &err) {
+        qWarning() << "Player2 error on" << file << ":" << err;
+        if (isPlaying) skipToNext();
+    });
+    connect(&audioplayer1, &AudioPlayer::playbackFinished, this, [=]() {
+        if (isPlaying) checkAdvanceTrack();
+    });
+    connect(&audioplayer2, &AudioPlayer::playbackFinished, this, [=]() {
+        if (isPlaying) checkAdvanceTrack();
     });
 
     ui->version->setText( tr("Versão: ") + QString(APP_VERSION) );
@@ -258,6 +281,11 @@ void MainWindow::changeLanguage(QString lang)
 
 void MainWindow::clearPlaylist()
 {
+    audioplayer1.Reset();
+    audioplayer2.Reset();
+    isPlaying = false;
+    current_play = 0;
+    next_play = 0;
     playlist.clear();
     updateAudioList();
 }
@@ -341,7 +369,14 @@ void MainWindow::updateClockLabel(QString text_time)
 void MainWindow::on_btn_remove_item_clicked()
 {
     int row = ui->audio_list->currentIndex().row();
+    if (row < 0 || row >= (int)playlist.size())
+        return;
     playlist.erase( playlist.begin() + row);
+    // Keep current_play/next_play valid after the playlist shrank
+    if (current_play >= (int)playlist.size()) current_play = playlist.size() - 1;
+    if (next_play >= (int)playlist.size()) next_play = playlist.size() - 1;
+    if (current_play < 0) current_play = 0;
+    if (next_play < 0) next_play = 0;
     updateAudioList();
 }
 
@@ -599,10 +634,7 @@ void MainWindow::on_btn_play_clicked()
 
 void MainWindow::on_btn_stop_clicked()
 {
-    if(playlist.size()==0)
-        return;
-
-    if(!audioplayer1.isPlaying() && !audioplayer2.isPlaying())
+    if(playlist.size()==0 && !audioplayer1.isPlaying() && !audioplayer2.isPlaying())
         return;
 
     audioplayer1.Reset();
@@ -657,9 +689,31 @@ void MainWindow::restoreVolumeAudio(QMediaPlayer::MediaStatus state)
     }
 }
 
+void MainWindow::skipToNext()
+{
+    if (playlist.size() == 0) return;
+
+    audioplayer1.Reset();
+    audioplayer2.Reset();
+
+    current_play = (current_play + 1) % playlist.size();
+    next();
+}
+
+void MainWindow::checkAdvanceTrack()
+{
+    if (!isPlaying || playlist.size() == 0) return;
+    if (audioplayer1.isStopped() && audioplayer2.isStopped() && !SayingTimer) {
+        current_play = (current_play + 1) % playlist.size();
+        next();
+    }
+}
+
 void MainWindow::next()
 {
     if(playlist.size()>0){
+        if (current_play >= (int)playlist.size()) current_play = 0;
+        if (current_play < 0) current_play = 0;
         if(SayingTimer==false){
             isPlaying = true;
 
@@ -736,10 +790,17 @@ void MainWindow::next()
         if(playlist[ current_play ].type=="time" && SayingTimer==false){
             QString say_audio = time_audio_path+"/"+SayTimeAudio+".mp3";
 
-            timeplayer->setSource(QUrl::fromLocalFile(say_audio));
-            timeAudioOutput->setVolume(1);
-            timeplayer->play();
-            SayingTimer=true;
+            if (QFile::exists(say_audio)) {
+                timeplayer->setSource(QUrl::fromLocalFile(say_audio));
+                timeAudioOutput->setVolume(1);
+                timeplayer->play();
+                SayingTimer=true;
+            } else {
+                qWarning() << "Time audio not found:" << say_audio << "- skipping time item";
+                // File doesn't exist: don't set SayingTimer, don't advance.
+                // The flash() watchdog will see both players stopped with
+                // isPlaying && !SayingTimer and advance naturally.
+            }
         }
 
     } else {
@@ -753,9 +814,13 @@ void MainWindow::updateAudioList(bool jump)
     int index = ui->audio_list->currentIndex().row();
     ui->audio_list->clear();
 
-    ui->current_audio->setText( "<p align='center'>"+playlist[ current_play ].name+"</p>" );
+    // Guard: playlist can be empty (e.g. cleared/removed while playing)
+    if (!playlist.empty() && current_play >= 0 && current_play < (int)playlist.size())
+        ui->current_audio->setText( "<p align='center'>"+playlist[ current_play ].name+"</p>" );
+    else
+        ui->current_audio->setText( "<p align='center'></p>" );
 
-    if(playlist.size()>current_play && jump==false){
+    if(!playlist.empty() && playlist.size()>current_play && jump==false){
         next_play = current_play + 1;
         if(next_play>(playlist.size()-1)) next_play = 0;
 
@@ -793,13 +858,22 @@ void MainWindow::updateAudioList(bool jump)
     }
 
     if(isPlaying){
-        for(int i=0; i<3; i++){
-            ui->audio_list->topLevelItem(current_play)->setBackground(i,QBrush(QColor(5, 223, 114)));
-            ui->audio_list->topLevelItem(current_play)->setForeground(i,Qt::black);
+        // Guard: current_play/next_play can go stale if the playlist was
+        // edited while playing — topLevelItem() returns nullptr for an
+        // invalid row, and dereferencing it is a segfault.
+        QTreeWidgetItem *curItem = (current_play >= 0 && current_play < playlist.size())
+            ? ui->audio_list->topLevelItem(current_play) : nullptr;
+        QTreeWidgetItem *nextItem = (next_play >= 0 && next_play < playlist.size())
+            ? ui->audio_list->topLevelItem(next_play) : nullptr;
 
-            if(next_play!=current_play){
-                ui->audio_list->topLevelItem(next_play)->setForeground(i,Qt::white);
-                ui->audio_list->topLevelItem(next_play)->setBackground(i,QBrush(QColor(255, 100, 103)));
+        for(int i=0; i<3; i++){
+            if (curItem) {
+                curItem->setBackground(i,QBrush(QColor(5, 223, 114)));
+                curItem->setForeground(i,Qt::black);
+            }
+            if (nextItem && next_play!=current_play){
+                nextItem->setForeground(i,Qt::white);
+                nextItem->setBackground(i,QBrush(QColor(255, 100, 103)));
             }
         }
     }
@@ -821,6 +895,28 @@ void MainWindow::updateDisplay() {
 
     vuMeterL->setLevel(currentVU_L);
     vuMeterR->setLevel(currentVU_R);
+
+    // Silence / audio failure watchdog
+    // If a player reports PlayingState but no audio reaches the VU meter
+    // for SILENCE_TIMEOUT ms, treat it as a failure and skip the track.
+    if (isPlaying) {
+        const int SILENCE_TIMEOUT = 10000; // 10 seconds
+        bool vuActive = (currentVU_L > 0 || currentVU_R > 0);
+
+        if (!audioplayer1.isFading && !audioplayer2.isFading && !vuActive) {
+            m_silenceMs += 10; // displayTimer interval
+            if (m_silenceMs >= SILENCE_TIMEOUT) {
+                qWarning() << "Silence watchdog: no audio for" << SILENCE_TIMEOUT
+                           << "ms — skipping track";
+                m_silenceMs = 0;
+                skipToNext();
+            }
+        } else {
+            m_silenceMs = 0;
+        }
+    } else {
+        m_silenceMs = 0;
+    }
 }
 
 void MainWindow::flash()
@@ -861,12 +957,6 @@ void MainWindow::flash()
         ui->groupBox->setStyleSheet("QGroupBox:title {background-color: red;}");
     } else {
         ui->groupBox->setStyleSheet("");
-    }
-
-    if(audioplayer1.isStopped() && audioplayer2.isStopped() && isPlaying && !SayingTimer) {
-        current_play += 1;
-        if(current_play>(playlist.size()-1)) current_play = 0;
-        next();
     }
 }
 
