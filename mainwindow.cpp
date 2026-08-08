@@ -505,6 +505,7 @@ void MainWindow::currentTimePosition(qint64 progress, int playerid)
             && !audioplayer1.isFading
             && !audioplayer2.isFading
             && (playlist[current_play].type=="music" || playlist[current_play].type=="folder-music")
+            && (repeat || current_play < (int)playlist.size() - 1)
         ) {
             current_play += 1;
             if(current_play>(playlist.size()-1)) current_play = 0;
