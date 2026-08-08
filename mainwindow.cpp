@@ -704,6 +704,11 @@ void MainWindow::checkAdvanceTrack()
 {
     if (!isPlaying || playlist.size() == 0) return;
     if (audioplayer1.isStopped() && audioplayer2.isStopped() && !SayingTimer) {
+        // Last track and repeat disabled: stop instead of looping forever.
+        if (!repeat && current_play >= (int)playlist.size() - 1) {
+            isPlaying = false;
+            return;
+        }
         current_play = (current_play + 1) % playlist.size();
         next();
     }
@@ -897,19 +902,30 @@ void MainWindow::updateDisplay() {
     vuMeterR->setLevel(currentVU_R);
 
     // Silence / audio failure watchdog
-    // If a player reports PlayingState but no audio reaches the VU meter
-    // for SILENCE_TIMEOUT ms, treat it as a failure and skip the track.
+    // A player in PlayingState whose position does NOT advance for
+    // SILENCE_TIMEOUT ms is treated as a failure and skipped.
+    // (VU meter alone is unreliable: the FFmpeg backend does not feed
+    //  QAudioBufferOutput, so levels stay at 0 even while audio plays.)
     if (isPlaying) {
         const int SILENCE_TIMEOUT = 10000; // 10 seconds
-        bool vuActive = (currentVU_L > 0 || currentVU_R > 0);
+        AudioPlayer *active = nullptr;
+        if (audioplayer1.isPlaying()) active = &audioplayer1;
+        else if (audioplayer2.isPlaying()) active = &audioplayer2;
 
-        if (!audioplayer1.isFading && !audioplayer2.isFading && !vuActive) {
-            m_silenceMs += 10; // displayTimer interval
-            if (m_silenceMs >= SILENCE_TIMEOUT) {
-                qWarning() << "Silence watchdog: no audio for" << SILENCE_TIMEOUT
-                           << "ms — skipping track";
+        if (active && !active->isFading) {
+            qint64 pos = active->getPosition();
+            bool advancing = (pos > m_lastPos);
+            m_lastPos = pos;
+            if (advancing) {
                 m_silenceMs = 0;
-                skipToNext();
+            } else {
+                m_silenceMs += 10; // displayTimer interval
+                if (m_silenceMs >= SILENCE_TIMEOUT) {
+                    qWarning() << "Silence watchdog: position stalled for" << SILENCE_TIMEOUT
+                               << "ms — skipping track";
+                    m_silenceMs = 0;
+                    skipToNext();
+                }
             }
         } else {
             m_silenceMs = 0;
