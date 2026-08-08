@@ -704,6 +704,11 @@ void MainWindow::checkAdvanceTrack()
 {
     if (!isPlaying || playlist.size() == 0) return;
     if (audioplayer1.isStopped() && audioplayer2.isStopped() && !SayingTimer) {
+        // Last track and repeat disabled: stop instead of looping forever.
+        if (!repeat && current_play >= (int)playlist.size() - 1) {
+            isPlaying = false;
+            return;
+        }
         current_play = (current_play + 1) % playlist.size();
         next();
     }

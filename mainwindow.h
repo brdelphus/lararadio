@@ -132,7 +132,7 @@ private:
 
     int current_play = 0;
     int next_play = 0;
-    bool repeat = true;
+    bool repeat = false;
     bool isPlaying = false;
 
 
