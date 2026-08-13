@@ -22,9 +22,20 @@ ButtonHole::ButtonHole(QWidget *parent) : QWidget(parent)
     connect(button, &QPushButton::customContextMenuRequested, this, [=](const QPoint& pos) { bntContextMenu(pos); });
     connect(button, &QPushButton::clicked, this, [=]() { buttonHoleClick(); });
 
+    // Loop mode: restart from the beginning when the source ends.
+    connect(player, &QMediaPlayer::mediaStatusChanged, this, [=](QMediaPlayer::MediaStatus status) {
+        if (loopMode && status == QMediaPlayer::EndOfMedia)
+            player->play();
+    });
+
     QTimer *timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &ButtonHole::flash);
     timer->start(300);
+}
+
+void ButtonHole::setLoopMode(bool loop)
+{
+    loopMode = loop;
 }
 
 void ButtonHole::setPositon(int newX, int newY)

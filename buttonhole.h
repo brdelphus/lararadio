@@ -18,6 +18,7 @@ class ButtonHole : public QWidget
 
         void setPositon(int newX, int newY);
         void setBtnText(QString newText);
+        void setLoopMode(bool loop);
 
     protected:
         void keyPressEvent(QKeyEvent *event) override;
@@ -38,6 +39,7 @@ class ButtonHole : public QWidget
         int y = 0;
         int width = 60;
         int height = 40;
+        bool loopMode = false;
 
         QSettings *settings;
 

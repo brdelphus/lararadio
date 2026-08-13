@@ -26,6 +26,34 @@
 #include <QRandomGenerator>
 #include <QDesktopServices>
 #include <QFile>
+#include <QUrl>
+#include <QFileInfo>
+#include <QDirIterator>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QMimeData>
+#include <algorithm>
+#include <functional>
+
+
+// Audio extensions accepted in playlist drag & drop (same as ButtonHole dialog).
+static const QStringList kValidAudioSuffixes = {"mp3", "wav", "ogg", "flac", "mp4"};
+
+static bool isAudioFile(const QFileInfo &fi)
+{
+    return fi.isFile() && kValidAudioSuffixes.contains(fi.suffix().toLower());
+}
+
+// Accept the drag if any URL is an audio file or a folder (folders expand on drop).
+static bool hasDroppableAudio(const QList<QUrl> &urls)
+{
+    for (const QUrl &url : urls) {
+        if (!url.isLocalFile()) continue;
+        const QFileInfo fi(url.toLocalFile());
+        if (fi.isDir() || isAudioFile(fi)) return true;
+    }
+    return false;
+}
 
 
 MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWindow)
@@ -236,6 +264,20 @@ void MainWindow::init()
         buttonHole.push_back( bh );
     }
 
+    // Loop button: a ButtonHole that keeps replaying its assigned audio.
+    // Left of the "Botoeira" label (window is 1048x622 — below is clipped).
+    ButtonHole *loopBh = new ButtonHole(this);
+    loopBh->setGeometry(180, 574, 60, 40);
+    loopBh->setBtnText("Loop");
+    loopBh->setLoopMode(true);
+    loopBh->show();
+
+    connect(ui->chk_repeat, &QCheckBox::toggled, this, [=](bool checked) { repeat = checked; });
+
+    // Drag & drop of audio files into the playlist (external drops only).
+    ui->audio_list->setAcceptDrops(true);
+    ui->audio_list->installEventFilter(this);
+
     m_uiReady = true;
     if (m_displayTimer) {
         m_displayTimer->start(10);
@@ -368,10 +410,21 @@ void MainWindow::updateClockLabel(QString text_time)
 
 void MainWindow::on_btn_remove_item_clicked()
 {
-    int row = ui->audio_list->currentIndex().row();
-    if (row < 0 || row >= (int)playlist.size())
+    // Remove every selected row (multi-selection), highest row first so
+    // earlier indexes stay valid while erasing.
+    QList<int> rows;
+    const auto items = ui->audio_list->selectedItems();
+    for (QTreeWidgetItem *item : items)
+        rows << ui->audio_list->indexOfTopLevelItem(item);
+    if (rows.isEmpty())
         return;
-    playlist.erase( playlist.begin() + row);
+
+    std::sort(rows.begin(), rows.end(), std::greater<int>());
+    for (int row : rows) {
+        if (row < 0 || row >= (int)playlist.size()) continue;
+        playlist.erase(playlist.begin() + row);
+    }
+
     // Keep current_play/next_play valid after the playlist shrank
     if (current_play >= (int)playlist.size()) current_play = playlist.size() - 1;
     if (next_play >= (int)playlist.size()) next_play = playlist.size() - 1;
@@ -386,57 +439,119 @@ void MainWindow::on_btn_add_item_clicked()
     QModelIndex file_index = ui->files->currentIndex();
     QModelIndex jungle_index = ui->jingle_files->currentIndex();
 
-    QString filepath = "";
-    QString filename = "";
-    QString type = "";
-    QString duration = "--:--";
-
     if((file_index.row()>=0 || jungle_index.row()>=0)){
+        QString filepath = "";
+        QString type = "";
+
         if (file_index.row()>=0 && file_index.isValid()) {
-            QVariant data = file_index.model()->data(file_index, Qt::DisplayRole);
-            filename = data.toString();
             filepath = model->filePath(file_index);
             if(!model->isDir(file_index)) type = "music"; else type = "folder-music";
         }
 
         if (jungle_index.row()>=0 && jungle_index.isValid()) {
-            QVariant data = jungle_index.model()->data(jungle_index, Qt::DisplayRole);
-            filename = data.toString();
             filepath = model->filePath(jungle_index);
             if(!model->isDir(jungle_index)) type = "jingle"; else type = "folder-jingle";
         }
 
-        if(filename=="")
+        if(filepath=="")
             return;
 
-        filename = filename.remove(".mp3");
-        filename = filename.remove(".wav");
-        filename = filename.remove(".flac");
-        filename = filename.remove(".ogg");
-
-
-        if(type!="folder"){
-            TagLib::FileRef aud(filepath.toStdString().c_str());
-            if (!aud.isNull() && aud.audioProperties()) {
-                int totalSeconds = aud.audioProperties()->length();
-                int minutes = totalSeconds / 60;
-                int seconds = totalSeconds % 60;
-
-                duration = QString("%1:%2").arg(minutes, 2, 10, QChar('0')).arg(seconds, 2, 10, QChar('0'));
-
-                if(aud.tag()->artist()!="" && aud.tag()->title()!="") {
-                    filename = QString::fromStdString( aud.tag()->title().toCString(true) ) + " - " + QString::fromStdString( aud.tag()->artist().toCString(true) );
-                }
-            }
-        }
+        Playlist item = makePlaylistItem(filepath, type);
 
         if(index>=0){
-            playlist.insert( playlist.begin() + (index+1), {filename, filepath, duration, type});
+            playlist.insert( playlist.begin() + (index+1), item);
         } else {
-            playlist.push_back({filename, filepath, duration, type});
+            playlist.push_back(item);
         }
         updateAudioList();
     }
+}
+
+Playlist MainWindow::makePlaylistItem(const QString &filepath, const QString &type)
+{
+    Playlist item;
+    item.path = filepath;
+    item.type = type;
+    item.name = QFileInfo(filepath).completeBaseName();
+    item.duration = "--:--";
+
+    // Folders are resolved at play time (random pick) — no tags to read.
+    if (type != "folder-music" && type != "folder-jingle") {
+        TagLib::FileRef aud(filepath.toStdString().c_str());
+        if (!aud.isNull() && aud.audioProperties()) {
+            int totalSeconds = aud.audioProperties()->length();
+            int minutes = totalSeconds / 60;
+            int seconds = totalSeconds % 60;
+
+            item.duration = QString("%1:%2").arg(minutes, 2, 10, QChar('0')).arg(seconds, 2, 10, QChar('0'));
+
+            if(aud.tag()->artist()!="" && aud.tag()->title()!="") {
+                item.name = QString::fromStdString( aud.tag()->title().toCString(true) ) + " - " + QString::fromStdString( aud.tag()->artist().toCString(true) );
+            }
+        }
+    }
+    return item;
+}
+
+bool MainWindow::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched == ui->audio_list) {
+        if (event->type() == QEvent::DragEnter || event->type() == QEvent::DragMove) {
+            auto *dragEvent = static_cast<QDragMoveEvent *>(event);
+            if (dragEvent->mimeData()->hasUrls() && hasDroppableAudio(dragEvent->mimeData()->urls())) {
+                dragEvent->setDropAction(Qt::CopyAction);
+                dragEvent->accept();
+            } else {
+                dragEvent->ignore();
+            }
+            return true;
+        }
+        if (event->type() == QEvent::Drop) {
+            auto *dropEvent = static_cast<QDropEvent *>(event);
+            if (dropEvent->mimeData()->hasUrls()) {
+                int row = ui->audio_list->indexAt(dropEvent->position().toPoint()).row();
+                addDroppedUrls(dropEvent->mimeData()->urls(), row);
+            }
+            dropEvent->setDropAction(Qt::CopyAction);
+            dropEvent->accept();
+            return true;
+        }
+    }
+    return QMainWindow::eventFilter(watched, event);
+}
+
+void MainWindow::addDroppedUrls(const QList<QUrl> &urls, int insertRow)
+{
+    QStringList files;
+    for (const QUrl &url : urls) {
+        if (!url.isLocalFile()) continue;
+        const QFileInfo fi(url.toLocalFile());
+        if (fi.isDir()) {
+            // Folder drop: expand every audio file inside, one after another.
+            // QDir name filters need glob patterns ("*.wav"), bare suffixes match nothing.
+            QStringList filters;
+            for (const QString &s : kValidAudioSuffixes) filters << "*." + s;
+            QDirIterator it(fi.absoluteFilePath(), filters,
+                            QDir::Files | QDir::NoSymLinks, QDirIterator::Subdirectories);
+            while (it.hasNext()) files << it.next();
+        } else if (isAudioFile(fi)) {
+            files << fi.absoluteFilePath();
+        }
+    }
+    if (files.isEmpty()) return;
+
+    files.sort(); // deterministic order for "one after another"
+
+    int row = insertRow;
+    for (const QString &file : std::as_const(files)) {
+        if (row >= 0) {
+            playlist.insert(playlist.begin() + (row + 1), makePlaylistItem(file, "music"));
+            row++;
+        } else {
+            playlist.push_back(makePlaylistItem(file, "music"));
+        }
+    }
+    updateAudioList();
 }
 
 void MainWindow::on_btn_talk_clicked()

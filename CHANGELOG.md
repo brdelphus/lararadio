@@ -65,11 +65,19 @@ Fork: https://github.com/brdelphus/lararadio
   `checkAdvanceTrack()` via `playbackFinished`. This prevents race
   conditions on short tracks (jingles) where both mechanisms could
   advance independently.
-- **Silence / audio failure watchdog**: monitors the VU meter via
-  `updateDisplay()` (10ms timer). If a player is in `PlayingState`
-  but no audio reaches the VU meter for 10 seconds (and no fade is
-  active), automatically calls `skipToNext()`. Covers device failure,
-  silent decoder bugs, and stuck pipes.
+- **Silence / audio failure watchdog**: monitors playback **position
+  advancement** via `updateDisplay()` (10ms timer). If the active
+  player's `getPosition()` does not advance for 10 seconds (and no
+  fade is active), automatically calls `skipToNext()`. Rewritten from
+  the VU-meter version: the FFmpeg backend does not feed
+  `QAudioBufferOutput`, so VU levels stayed at 0 while audio played,
+  causing false-positive skips. Covers device failure, silent decoder
+  bugs, and stuck pipes.
+- **End of playlist stops instead of looping**: `repeat` now defaults
+  to `false`. On the last track with repeat off, `checkAdvanceTrack()`
+  stops playback (`isPlaying = false`) instead of wrapping to the
+  start; the 5s pre-transition in `currentTimePosition()` also no
+  longer wraps when repeat is off.
 - **Segfault fix on playlist edit while playing**: `clearPlaylist()`
   emptied the playlist while `isPlaying` stayed true and
   `current_play` stayed stale, making `topLevelItem()` return
@@ -90,6 +98,40 @@ Fork: https://github.com/brdelphus/lararadio
 - Added explicit `#include <QMediaPlayer>` and `#include <QAudioOutput>`
   (were previously pulled indirectly via `audioplayer.h` when it
   inherited from `QMediaPlayer`; now it inherits from `QObject`)
+
+### Added
+
+#### `mainwindow.ui` / `mainwindow.cpp`
+- **Repeat checkbox** (`chk_repeat`, left of the transport buttons,
+  between the mic and play): toggles the `repeat` member that controls
+  whether the playlist wraps at the end or stops on the last track.
+  Default: off.
+
+#### `buttonhole.h` / `buttonhole.cpp`
+- **Loop button**: an 11th ButtonHole labeled "Loop" (left of the
+  "Botoeira" label, y=574 line) with a new `setLoopMode()` flag. When
+  enabled, the assigned audio restarts from the beginning on
+  `EndOfMedia` (`mediaStatusChanged` → `player->play()`), replaying
+  indefinitely. Assign audio via right-click → "Carregar Áudio", same
+  as the other buttonholes (settings key `buttonhole/btn_Loop`). Click
+  toggles play/stop like the others.
+
+#### `mainwindow.h` / `mainwindow.cpp`
+- **Drag & drop into the playlist**: `audio_list` accepts external drops
+  (event filter installed on the tree). Audio files dropped from a file
+  manager are added as `music` items; dropping a **folder** expands it
+  into a sequence of `music` items (recursive scan, name-sorted — "one
+  after another"). Non-audio files are ignored. Jingle/vinheta still
+  comes only from its own tree.
+- **`makePlaylistItem()` helper**: extracted from the TagLib item-building
+  logic that was copy-pasted 3× (add button + 2 disabled double-click
+  handlers). Now the single path for building a `Playlist` entry, reused
+  by the add button and the drop. Bonus: `completeBaseName()` replaces
+  the old `filename.remove(".mp3")` chain (removes only the final
+  extension).
+- **Multi-selection removal**: `audio_list` selection mode changed to
+  `ExtendedSelection`; the remove button deletes **every selected row**
+  (highest row first, keeping `current_play`/`next_play` clamped).
 
 ### Known issues (original, not introduced by us)
 - TagLib `AudioProperties::length()` is deprecated in favor of

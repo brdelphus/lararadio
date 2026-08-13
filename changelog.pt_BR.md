@@ -65,11 +65,18 @@ Fork: https://github.com/brdelphus/lararadio
   `checkAdvanceTrack()` via `playbackFinished`. Impede condições de
   corrida em faixas curtas (vinhetas) onde ambos os mecanismos
   avançavam independentemente.
-- **Watchdog de silêncio / falha de áudio**: monitora o VU meter via
-  `updateDisplay()` (timer de 10ms). Se um player está em `PlayingState`
-  mas nenhum áudio chega ao VU meter por 10 segundos (sem fade ativo),
-  chama `skipToNext()` automaticamente. Cobre falha de dispositivo,
-  bugs silenciosos do decoder e pipes travados.
+- **Watchdog de silêncio / falha de áudio**: monitora o **avanço de
+  posição** via `updateDisplay()` (timer de 10ms). Se o `getPosition()`
+  do player ativo não avança por 10 segundos (sem fade ativo), chama
+  `skipToNext()` automaticamente. Reescrito da versão por VU meter: o
+  backend FFmpeg não alimenta o `QAudioBufferOutput`, então o nível do
+  VU ficava em 0 com o áudio tocando, causando saltos falsos. Cobre
+  falha de dispositivo, bugs silenciosos do decoder e pipes travados.
+- **Fim de playlist para em vez de repetir**: `repeat` agora é `false`
+  por padrão. Na última faixa com repeat desligado,
+  `checkAdvanceTrack()` para a reprodução (`isPlaying = false`) em vez
+  de voltar ao início; a pré-transição de 5s em `currentTimePosition()`
+  também não faz mais wrap quando o repeat está desligado.
 - **Fix de segfault ao editar playlist durante reprodução**:
   `clearPlaylist()` esvaziava a playlist com `isPlaying` ainda true e
   `current_play` desatualizado, fazendo `topLevelItem()` retornar
@@ -89,6 +96,40 @@ Fork: https://github.com/brdelphus/lararadio
 - Adicionado `#include <QMediaPlayer>` e `#include <QAudioOutput>`
   explicitamente (eram puxados indiretamente via `audioplayer.h`
   quando ele herdava de `QMediaPlayer`)
+
+### Adicionado
+
+#### `mainwindow.ui` / `mainwindow.cpp`
+- **Checkbox Repeat** (`chk_repeat`, à esquerda dos botões de
+  transporte, entre o microfone e o play): liga/desliga o membro
+  `repeat` que controla se a playlist faz wrap no fim ou para na
+  última faixa. Padrão: desligado.
+
+#### `buttonhole.h` / `buttonhole.cpp`
+- **Botão Loop**: um 11º ButtonHole com texto "Loop" (à esquerda do
+  label "Botoeira", linha y=574) com a nova flag `setLoopMode()`. Quando
+  ativo, o áudio atribuído reinicia do início no `EndOfMedia`
+  (`mediaStatusChanged` → `player->play()`), tocando indefinidamente.
+  Atribua o áudio via botão direito → "Carregar Áudio", igual aos
+  outros buttonholes (settings key `buttonhole/btn_Loop`). Clique
+  alterna tocar/parar como os demais.
+
+#### `mainwindow.h` / `mainwindow.cpp`
+- **Drag & drop na playlist**: `audio_list` aceita drops externos (event
+  filter instalado na tree). Arquivos de áudio soltos do gerenciador de
+  arquivos entram como itens `music`; arrastar uma **pasta** expande em
+  uma sequência de itens `music` (varredura recursiva, ordenada por nome
+  — "uma atrás da outra"). Arquivos não-áudio são ignorados. Vinheta
+  continua vindo só da caixa dela.
+- **Helper `makePlaylistItem()`**: extraído da lógica de montagem via
+  TagLib que estava copiada 3× (botão add + 2 handlers de double-click
+  desligados). Agora é o caminho único pra montar um item `Playlist`,
+  usado pelo botão add e pelo drop. Bônus: `completeBaseName()`
+  substitui a cadeia de `filename.remove(".mp3")` (remove só a extensão
+  final).
+- **Remoção múltipla**: o `audio_list` mudou pra `ExtendedSelection`; o
+  botão de remover apaga **todos os selecionados** (da maior row pra
+  menor, mantendo `current_play`/`next_play` limitados).
 
 ### Problemas conhecidos (originais, não introduzidos por nós)
 - `TagLib::AudioProperties::length()` deprecated — usar

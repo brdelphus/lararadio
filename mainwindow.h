@@ -107,6 +107,11 @@ private slots:
 private:
     QAudioFormat getAudioFormat();
     void calculateRMS(const QAudioBuffer &buffer);
+    Playlist makePlaylistItem(const QString &filepath, const QString &type);
+    void addDroppedUrls(const QList<QUrl> &urls, int insertRow);
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
     Ui::MainWindow *ui;
     AudioPlayer audioplayer1;
