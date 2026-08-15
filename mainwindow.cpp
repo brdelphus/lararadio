@@ -273,16 +273,6 @@ void MainWindow::init()
     loopBh->setLoopMode(true);
     loopBh->show();
 
-    // ON AIR button: toggles a physical ON AIR light via an external script.
-    // Left of the Loop button (x=100, Loop starts at 180; "Versão" label ends at x=91).
-    // Script configurable in ConfigDialog: onair/script + onair/param_on + onair/param_off.
-    onAirButton = new QPushButton(this);
-    onAirButton->setGeometry(100, 574, 60, 40);
-    onAirButton->setText(tr("No Ar"));
-    onAirButton->setCheckable(false);
-    connect(onAirButton, &QPushButton::clicked, this, &MainWindow::toggleOnAir);
-    onAirButton->show();
-
     connect(ui->chk_repeat, &QCheckBox::toggled, this, [=](bool checked) { repeat = checked; });
 
     // Drag & drop of audio files into the playlist (external drops only).
@@ -328,32 +318,7 @@ void MainWindow::changeLanguage(QString lang)
         qApp->installTranslator(translator);
         ui->retranslateUi(this);
 
-        if (onAirButton) onAirButton->setText(tr("No Ar"));
         settings->setValue("interface/language", lang);
-    }
-}
-
-// ON AIR toggle: flips the light state and calls the configured external
-// script with the matching parameter (e.g. usbrelay2 with "on1"/"off1").
-// Script config in QSettings: onair/script, onair/param_on, onair/param_off.
-void MainWindow::toggleOnAir()
-{
-    onAir = !onAir;
-
-    if (onAir) {
-        onAirButton->setStyleSheet("background-color: #fc0; color: #000; font-weight: bold;");
-    } else {
-        onAirButton->setStyleSheet("background-color: #000; color: #fff;");
-    }
-
-    QString script = settings->value("onair/script").toString();
-    QString param  = onAir ? settings->value("onair/param_on", "on1").toString()
-                           : settings->value("onair/param_off", "off1").toString();
-    if (!script.isEmpty()) {
-        qDebug() << "ON AIR" << (onAir ? "ON" : "OFF") << "->" << script << param;
-        QProcess::startDetached(script, QStringList() << param);
-    } else {
-        qDebug() << "ON AIR" << (onAir ? "ON" : "OFF") << "(sem script configurado)";
     }
 }
 
@@ -598,6 +563,18 @@ void MainWindow::on_btn_talk_clicked()
     } else {
         Talking=false;
         ui->btn_talk->setStyleSheet("");
+    }
+
+    // ON AIR light: same mechanism as the old standalone button, now tied to
+    // the TALK (locution) state. Fires the configured script with the matching
+    // parameter (e.g. usbrelay2 with "on1"/"off1"). Skips if path doesn't exist.
+    // Config: onair/script + onair/param_on + onair/param_off (ConfigDialog).
+    QString script = settings->value("onair/script").toString();
+    if (!script.isEmpty() && QFile::exists(script)) {
+        QString param = Talking ? settings->value("onair/param_on", "on1").toString()
+                                : settings->value("onair/param_off", "off1").toString();
+        qDebug() << "ON AIR" << (Talking ? "ON" : "OFF") << "->" << script << param;
+        QProcess::startDetached(script, QStringList() << param);
     }
 }
 
