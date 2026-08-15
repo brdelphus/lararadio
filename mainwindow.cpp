@@ -908,9 +908,9 @@ void MainWindow::next()
         if(SayingTimer==false){
             isPlaying = true;
 
-            // Playlist takes priority over the loop: stop the loop and let the
-            // new track fade in (music does fadeIn below; jingle plays full).
-            if (loopBh && loopBh->isPlaying()) loopBh->stopPlayback();
+            // Playlist takes priority over the loop: fade the loop out
+            // (not an abrupt cut) and let the new track fade in.
+            if (loopBh && loopBh->isPlaying()) loopBh->fadeOut();
 
             if(audioplayer1.isPlaying()) audioplayer1.fadeOut();
             if(audioplayer2.isPlaying()) audioplayer2.fadeOut();

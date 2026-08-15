@@ -21,6 +21,7 @@ class ButtonHole : public QWidget
         void setLoopMode(bool loop);
         bool isPlaying();
         void stopPlayback();
+        void fadeOut();
         float maxVolume = 1.0f;
 
     signals:
@@ -46,6 +47,7 @@ class ButtonHole : public QWidget
         int width = 60;
         int height = 40;
         bool loopMode = false;
+        bool m_fadeOut = false;
 
         QSettings *settings;
 

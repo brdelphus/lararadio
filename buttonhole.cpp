@@ -107,9 +107,19 @@ bool ButtonHole::isPlaying()
 
 void ButtonHole::stopPlayback()
 {
+    m_fadeOut = false;
     player->stop();
     maxVolume = 1.0f;
     audioOutput->setVolume(1.0f);
+}
+
+// Fade the buttonhole audio out gradually (flash timer runs every 300ms).
+// When volume reaches ~0, stop playback and reset. Used when the playlist
+// takes over from the Loop so it doesn't cut off abruptly.
+void ButtonHole::fadeOut()
+{
+    if (player->isPlaying())
+        m_fadeOut = true;
 }
 
 void ButtonHole::buttonHoleStop()
@@ -125,6 +135,17 @@ void ButtonHole::buttonHoleKeyPress()
 void ButtonHole::flash()
 {
     if(player->isPlaying()) {
+        // Fade out (playlist took over): ramp volume down, stop at ~0.
+        if (m_fadeOut) {
+            float vol = audioOutput->volume();
+            vol -= 0.1f;
+            if (vol <= 0.02f) {
+                stopPlayback();
+            } else {
+                audioOutput->setVolume(vol);
+            }
+            return;
+        }
         // Ducking: sobe/desce gradualmente até maxVolume (TALK controla isso)
         float vol = audioOutput->volume();
         if (vol > maxVolume + 0.02f) {
