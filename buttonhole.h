@@ -19,6 +19,12 @@ class ButtonHole : public QWidget
         void setPositon(int newX, int newY);
         void setBtnText(QString newText);
         void setLoopMode(bool loop);
+        bool isPlaying();
+        void stopPlayback();
+        float maxVolume = 1.0f;
+
+    signals:
+        void triggered();
 
     protected:
         void keyPressEvent(QKeyEvent *event) override;

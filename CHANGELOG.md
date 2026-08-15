@@ -132,17 +132,37 @@ Fork: https://github.com/brdelphus/lararadio
 - **Multi-selection removal**: `audio_list` selection mode changed to
   `ExtendedSelection`; the remove button deletes **every selected row**
   (highest row first, keeping `current_play`/`next_play` clamped).
-- **ON AIR button** (`onAirButton`, left of the Loop button, x=100/y=574):
-  toggles a physical ON AIR light through an external script. Click flips
-  the state — yellow `ON` / black `OFF` — and calls the configured script
-  with the matching parameter (`onair/script` + `onair/param_on` /
-  `onair/param_off`, defaults `on1`/`off1`, e.g. `usbrelay2 on1`). Label
-  follows the UI language: "No Ar" (pt_BR) / "On Air" (en_US). Script path
-  and parameters are set in ConfigDialog → Caminhos.
+- **ON AIR light — integrated into the TALK button** (refactored from the
+  standalone `onAirButton`, which was removed): the physical ON AIR light
+  now follows the locution state. Clicking the mic (TALK) fires the
+  configured script with the matching parameter — `onair/script` +
+  `onair/param_on` / `onair/param_off` (defaults `on1`/`off1`, e.g.
+  `usbrelay2 on1`) — ON when locution starts, OFF when it ends. Script
+  path and parameters are set in ConfigDialog → Caminhos. Execution is
+  skipped silently if the script path does not exist.
 - **ConfigDialog scroll**: settings dialog now wraps its content in a
   `QScrollArea` so every field (including the ON AIR ones) stays reachable
   on small screens. The ON AIR script label shows a `~/bin/usbrelay2`
   example — resolved per-user, no hardcoded username.
+- **Playlist ↔ Loop priority with fades**: playing a track in the playlist
+  while the Loop is running stops the Loop and lets the track fade in;
+  clicking the Loop while the playlist is playing fades the playlist out
+  and hands the audio over to the Loop. `current_play` stays on the same
+  track through either handover.
+- **TALK ducks BOTH sources**: the TALK button now lowers the Loop volume
+  as well as the playlist (`loopBh->maxVolume` fed by the same ducking
+  logic; the ButtonHole flash timer ramps the volume gradually instead of
+  instantly).
+- **"Marcar como Próximo" fixed**: the context-menu action now actually
+  moves the clicked track to right after the currently playing one (vector
+  reorder + `current_play` shift), so it really plays next and the
+  "Próxima" label updates. Previously it only set an index that was
+  overwritten by `updateAudioList(true)`.
+- **Playlist reorder drag (manual)**: internal drag & drop reorders the
+  playlist keeping the `std::vector` in sync (Qt's `InternalMove` only
+  reorders the tree — a known desync pitfall). The drop handler moves the
+  vector itself and rebuilds the tree after the drop event finishes.
+  Note: still being fine-tuned.
 
 ### Known issues (original, not introduced by us)
 - TagLib `AudioProperties::length()` is deprecated in favor of

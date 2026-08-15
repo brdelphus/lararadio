@@ -267,16 +267,27 @@ void MainWindow::init()
 
     // Loop button: a ButtonHole that keeps replaying its assigned audio.
     // Left of the "Botoeira" label (window is 1048x622 — below is clipped).
-    ButtonHole *loopBh = new ButtonHole(this);
+    loopBh = new ButtonHole(this);
     loopBh->setGeometry(180, 574, 60, 40);
     loopBh->setBtnText("Loop");
     loopBh->setLoopMode(true);
     loopBh->show();
 
+    // Priority between loop and playlist: when the loop is pressed while the
+    // playlist is playing, fade the playlist out and let the loop take over.
+    connect(loopBh, &ButtonHole::triggered, this, [=]() {
+        if (audioplayer1.isPlaying()) audioplayer1.fadeOut();
+        if (audioplayer2.isPlaying()) audioplayer2.fadeOut();
+    });
+
     connect(ui->chk_repeat, &QCheckBox::toggled, this, [=](bool checked) { repeat = checked; });
 
-    // Drag & drop of audio files into the playlist (external drops only).
+    // Drag & drop into the playlist (external drops only).
+    // Internal reorder is handled 100% manually in eventFilter() — Qt's
+    // InternalMove reorders only the tree and desyncs from the vector.
     ui->audio_list->setAcceptDrops(true);
+    ui->audio_list->setDragEnabled(true);
+    ui->audio_list->setDragDropMode(QAbstractItemView::DragDrop);
     ui->audio_list->installEventFilter(this);
 
     m_uiReady = true;
@@ -364,8 +375,23 @@ void MainWindow::audioOptionsMenu(QPoint pos)
     connect(deleteThis, &QAction::triggered, this, &MainWindow::on_btn_remove_item_clicked);
 
     connect(markHasNext, &QAction::triggered, this, [=]() {
-        next_play = index.row();
-        updateAudioList(true);
+        // Move the clicked track to right after the currently playing one, so
+        // it actually plays next (next_play = current_play+1, label included).
+        int from = index.row();
+        if (from < 0 || from >= (int)playlist.size() || from == current_play)
+            return;
+
+        Playlist item = playlist[from];
+        playlist.erase(playlist.begin() + from);
+
+        // Erasing before current_play shifts current_play left by one.
+        if (from < current_play) current_play--;
+        int insertPos = current_play + 1;
+        playlist.insert(playlist.begin() + insertPos, item);
+
+        // next_play is recomputed by updateAudioList() (jump=false default),
+        // which also refreshes the "Próxima" label.
+        updateAudioList();
         ui->audio_list->clearSelection();
     });
 }
@@ -459,11 +485,10 @@ void MainWindow::on_btn_add_item_clicked()
 
         Playlist item = makePlaylistItem(filepath, type);
 
-        if(index>=0){
-            playlist.insert( playlist.begin() + (index+1), item);
-        } else {
-            playlist.push_back(item);
-        }
+        // Always append at the END of the playlist (not after the currently
+        // selected/playing row) — matches how the listener expects new songs
+        // to queue up after everything already added.
+        playlist.push_back(item);
         updateAudioList();
     }
 }
@@ -499,17 +524,49 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
     if (watched == ui->audio_list) {
         if (event->type() == QEvent::DragEnter || event->type() == QEvent::DragMove) {
             auto *dragEvent = static_cast<QDragMoveEvent *>(event);
-            if (dragEvent->mimeData()->hasUrls() && hasDroppableAudio(dragEvent->mimeData()->urls())) {
-                dragEvent->setDropAction(Qt::CopyAction);
-                dragEvent->accept();
-            } else {
-                dragEvent->ignore();
-            }
+            // Accept ANY drag (internal reorder or external files); we decide
+            // in the Drop handler what to do with it.
+            dragEvent->accept();
             return true;
         }
         if (event->type() == QEvent::Drop) {
             auto *dropEvent = static_cast<QDropEvent *>(event);
-            if (dropEvent->mimeData()->hasUrls()) {
+            qDebug() << "DROP source=" << dropEvent->source()
+                     << "self=" << ui->audio_list
+                     << "urls=" << dropEvent->mimeData()->hasUrls()
+                     << "formats=" << dropEvent->mimeData()->formats()
+                     << "pos=" << dropEvent->position().toPoint()
+                     << "row=" << ui->audio_list->indexAt(dropEvent->position().toPoint()).row();
+            if (dropEvent->source() == ui->audio_list) {
+                // Internal reorder: move the vector ourselves, then rebuild the
+                // tree AFTER the drop event finishes (singleShot) — calling
+                // clear() inside the drop corrupts the view (stacked items).
+                QList<QTreeWidgetItem*> sel = ui->audio_list->selectedItems();
+                int fromRow = -1;
+                if (!sel.isEmpty())
+                    fromRow = ui->audio_list->indexOfTopLevelItem(sel.first());
+                int toRow = ui->audio_list->indexAt(dropEvent->position().toPoint()).row();
+                qDebug() << "  internal fromRow=" << fromRow << "toRow=" << toRow
+                         << "selCount=" << sel.size();
+
+                if (fromRow >= 0 && fromRow != toRow) {
+                    Playlist item = playlist[fromRow];
+                    playlist.erase(playlist.begin() + fromRow);
+                    if (toRow > fromRow) toRow--;
+                    playlist.insert(playlist.begin() + toRow, item);
+
+                    // Keep current_play pointing at the same track.
+                    if (current_play == fromRow) {
+                        current_play = toRow;
+                    } else if (current_play > fromRow && current_play <= toRow) {
+                        current_play--;
+                    } else if (current_play < fromRow && current_play >= toRow) {
+                        current_play++;
+                    }
+
+                    QTimer::singleShot(0, this, [=]() { updateAudioList(); });
+                }
+            } else if (dropEvent->mimeData()->hasUrls()) {
                 int row = ui->audio_list->indexAt(dropEvent->position().toPoint()).row();
                 addDroppedUrls(dropEvent->mimeData()->urls(), row);
             }
@@ -851,6 +908,10 @@ void MainWindow::next()
         if(SayingTimer==false){
             isPlaying = true;
 
+            // Playlist takes priority over the loop: stop the loop and let the
+            // new track fade in (music does fadeIn below; jingle plays full).
+            if (loopBh && loopBh->isPlaying()) loopBh->stopPlayback();
+
             if(audioplayer1.isPlaying()) audioplayer1.fadeOut();
             if(audioplayer2.isPlaying()) audioplayer2.fadeOut();
 
@@ -1076,6 +1137,11 @@ void MainWindow::flash()
         audioplayer2.maxVolume = volumeToTalk;
     } else if(Talking==false && audioplayer2.isPlaying()){
         audioplayer2.maxVolume = 1.0f;
+    }
+
+    // TALK ducks the loop too (ButtonHole::flash drives its volume to maxVolume)
+    if (loopBh) {
+        loopBh->maxVolume = Talking ? volumeToTalk : 1.0f;
     }
 
     if(Talking){

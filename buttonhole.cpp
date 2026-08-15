@@ -97,6 +97,19 @@ void ButtonHole::buttonHoleClick()
     player->stop();
     player->setSource( QUrl::fromLocalFile( filename ) );
     player->play();
+    emit triggered();
+}
+
+bool ButtonHole::isPlaying()
+{
+    return player->isPlaying();
+}
+
+void ButtonHole::stopPlayback()
+{
+    player->stop();
+    maxVolume = 1.0f;
+    audioOutput->setVolume(1.0f);
 }
 
 void ButtonHole::buttonHoleStop()
@@ -112,6 +125,14 @@ void ButtonHole::buttonHoleKeyPress()
 void ButtonHole::flash()
 {
     if(player->isPlaying()) {
+        // Ducking: sobe/desce gradualmente até maxVolume (TALK controla isso)
+        float vol = audioOutput->volume();
+        if (vol > maxVolume + 0.02f) {
+            audioOutput->setVolume(vol - 0.1f);
+        } else if (vol < maxVolume - 0.02f) {
+            audioOutput->setVolume(vol + 0.1f);
+        }
+
         if(button->styleSheet()!="") {
             button->setStyleSheet("");
         } else {

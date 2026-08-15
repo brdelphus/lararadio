@@ -161,6 +161,7 @@ protected:
 
     // ButtonHole *buttonHole;
     std::vector<ButtonHole*> buttonHole;
+    ButtonHole *loopBh = nullptr;
 
     bool m_uiReady = false;
     bool m_recentPlaylistLoaded = false;
