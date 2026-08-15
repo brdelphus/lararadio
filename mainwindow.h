@@ -98,6 +98,8 @@ private slots:
     void changeLanguage(QString lang);
     void audioOptionsMenu(QPoint pos);
 
+    void toggleOnAir();
+
     void unSelectedJingle();
     void unSelectedFiles();
 
@@ -161,6 +163,11 @@ protected:
 
     // ButtonHole *buttonHole;
     std::vector<ButtonHole*> buttonHole;
+
+    // ON AIR button: toggles a physical ON AIR light via an external script.
+    // Left of the Loop button. Yellow = ON, black = OFF.
+    QPushButton *onAirButton = nullptr;
+    bool onAir = false;
 
     bool m_uiReady = false;
     bool m_recentPlaylistLoaded = false;

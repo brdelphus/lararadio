@@ -19,6 +19,10 @@ ConfigDialog::ConfigDialog(QWidget *parent)
     ui->jingle_path->setText( settings.value("files/jingleDir").toString() );
     ui->time_path->setText( settings.value("files/audioTimeDir").toString() );
 
+    ui->onair_script->setText( settings.value("onair/script").toString() );
+    ui->onair_param_on->setText( settings.value("onair/param_on", "on1").toString() );
+    ui->onair_param_off->setText( settings.value("onair/param_off", "off1").toString() );
+
     ui->sayClock->setChecked( settings.value("volume/sayClock").toBool() );
     ui->sayClockFade->setChecked( settings.value("volume/sayClockFade").toBool() );
 
@@ -40,6 +44,9 @@ void ConfigDialog::accept()
     settings.setValue("files/defaultDir", ui->music_path->text());
     settings.setValue("files/jingleDir", ui->jingle_path->text());
     settings.setValue("files/audioTimeDir", ui->time_path->text());
+    settings.setValue("onair/script", ui->onair_script->text());
+    settings.setValue("onair/param_on", ui->onair_param_on->text());
+    settings.setValue("onair/param_off", ui->onair_param_off->text());
     settings.setValue("volume/sayClock", ui->sayClock->isChecked());
     settings.setValue("volume/sayClockFade", ui->sayClockFade->isChecked());
     settings.setValue("volume/stopFade", ui->stopFade->isChecked());
