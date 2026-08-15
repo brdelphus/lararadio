@@ -22,6 +22,8 @@ ConfigDialog::ConfigDialog(QWidget *parent)
     ui->onair_script->setText( settings.value("onair/script").toString() );
     ui->onair_param_on->setText( settings.value("onair/param_on", "on1").toString() );
     ui->onair_param_off->setText( settings.value("onair/param_off", "off1").toString() );
+    // Exemplo dinâmico (sem nome de usuário hardcoded — usa ~/ que resolve pro home de quem roda)
+    ui->label_9->setText( tr("Script ON AIR (ex: ~/bin/usbrelay2)") );
 
     ui->sayClock->setChecked( settings.value("volume/sayClock").toBool() );
     ui->sayClockFade->setChecked( settings.value("volume/sayClockFade").toBool() );

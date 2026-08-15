@@ -6,6 +6,7 @@
 #include <QCoreApplication>
 #include <QFileDialog>
 #include <QDialogButtonBox>
+#include <QDir>
 
 namespace Ui {
 class ConfigDialog;

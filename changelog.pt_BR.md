@@ -130,6 +130,17 @@ Fork: https://github.com/brdelphus/lararadio
 - **Remoção múltipla**: o `audio_list` mudou pra `ExtendedSelection`; o
   botão de remover apaga **todos os selecionados** (da maior row pra
   menor, mantendo `current_play`/`next_play` limitados).
+- **Botão ON AIR** (`onAirButton`, à esquerda do botão Loop, x=100/y=574):
+  alterna uma luz física de ON AIR via script externo. O clique inverte o
+  estado — amarelo `ON` / preto `OFF` — e chama o script configurado com
+  o parâmetro correspondente (`onair/script` + `onair/param_on` /
+  `onair/param_off`, defaults `on1`/`off1`, ex: `usbrelay2 on1`). O texto
+  acompanha o idioma da interface: "No Ar" (pt_BR) / "On Air" (en_US).
+  Script e parâmetros configurados em ConfigDialog → Caminhos.
+- **Scroll no ConfigDialog**: o diálogo de configuração agora envolve o
+  conteúdo numa `QScrollArea` pra todos os campos (inclusive os do ON
+  AIR) ficarem acessíveis em telas pequenas. O exemplo do script mostra
+  `~/bin/usbrelay2` — resolvido por usuário, sem nome hardcoded.
 
 ### Problemas conhecidos (originais, não introduzidos por nós)
 - `TagLib::AudioProperties::length()` deprecated — usar
