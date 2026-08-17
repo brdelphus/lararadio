@@ -674,6 +674,10 @@ void MainWindow::updateStreamButtonState()
         && !settings->value("stream/user").toString().trimmed().isEmpty()
         && !settings->value("stream/pass").toString().isEmpty();
     ui->btn_stream->setEnabled(valid || m_streamOn);
+    qDebug() << "[stream] valid=" << valid
+             << "url=" << settings->value("stream/url").toString()
+             << "user=" << settings->value("stream/user").toString()
+             << "enabled=" << ui->btn_stream->isEnabled();
 }
 
 // Stream ON/OFF (Icecast/Shoutcast): dispara/para um ffmpeg que captura o
@@ -722,10 +726,14 @@ void MainWindow::on_btn_stream_clicked()
     m_streamProc->setProgram("ffmpeg");
     m_streamProc->setArguments({
         "-hide_banner", "-loglevel", "error",
-        "-user_agent", "LaraRadio",
         "-f", "pulse", "-i", source,
         "-c:a", "libmp3lame", "-b:a", "128k",
-        "-f", "mp3", target
+        "-f", "mp3",
+        // -user_agent é opção do PROTOCOLO http do output — tem que vir
+        // depois do -f e antes da URL (em posição global o ffmpeg 6.1
+        // responde "Option user_agent not found" e o stream morre no start).
+        "-user_agent", "LaraRadio",
+        target
     });
     m_streamProc->setProcessChannelMode(QProcess::MergedChannels);
     connect(m_streamProc, &QProcess::finished, this, [=](int code, QProcess::ExitStatus) {
