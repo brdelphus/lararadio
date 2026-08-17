@@ -102,6 +102,7 @@ private slots:
 
     void changeLanguage(QString lang);
     void audioOptionsMenu(QPoint pos);
+    void updateStreamButtonState();
 
     void unSelectedJingle();
     void unSelectedFiles();

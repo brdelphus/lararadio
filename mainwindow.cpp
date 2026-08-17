@@ -186,6 +186,9 @@ void MainWindow::init()
         }
     }
 
+    // Botão de stream desabilitado até haver config válida (stream/*).
+    updateStreamButtonState();
+
     model = new QFileSystemModel(this);
     model->setRootPath( QDir::homePath() );
     model->setIconProvider(new CustomIconProvider);
@@ -659,6 +662,18 @@ void MainWindow::on_btn_talk_clicked()
         qDebug() << "ON AIR" << (Talking ? "ON" : "OFF") << "->" << script << param;
         QProcess::startDetached(script, QStringList() << param);
     }
+}
+
+// O botão de stream só fica clicável com config válida (URL + usuário +
+// senha preenchidos). Com o stream LIGADO continua clicável (pra desligar),
+// mesmo que a config tenha sido zerada depois.
+void MainWindow::updateStreamButtonState()
+{
+    const bool valid =
+        !settings->value("stream/url").toString().trimmed().isEmpty()
+        && !settings->value("stream/user").toString().trimmed().isEmpty()
+        && !settings->value("stream/pass").toString().isEmpty();
+    ui->btn_stream->setEnabled(valid || m_streamOn);
 }
 
 // Stream ON/OFF (Icecast/Shoutcast): dispara/para um ffmpeg que captura o
@@ -1414,6 +1429,9 @@ void MainWindow::showConfigDialog()
     if (settings->value("autosave/enabled").toBool()) {
         saveAutosavePlaylist();
     }
+
+    // Stream config may have changed: enable/disable the stream button.
+    updateStreamButtonState();
 }
 
 void MainWindow::savePlaylist()
