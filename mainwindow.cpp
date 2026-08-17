@@ -329,7 +329,11 @@ void MainWindow::showEvent(QShowEvent *event)
     }
 
     m_recentPlaylistLoaded = true;
-    QTimer::singleShot(0, this, &MainWindow::loadRecentPlaylist);
+    if (settings->value("autosave/enabled").toBool()) {
+        QTimer::singleShot(0, this, &MainWindow::loadAutosavePlaylist);
+    } else {
+        QTimer::singleShot(0, this, &MainWindow::loadRecentPlaylist);
+    }
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event){
@@ -1216,6 +1220,14 @@ void MainWindow::showAboutDialog()
     aboutDialog.exec();
 }
 
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    if (settings->value("autosave/enabled").toBool()) {
+        saveAutosavePlaylist();
+    }
+    QMainWindow::closeEvent(event);
+}
+
 void MainWindow::addLog(const QString &entry)
 {
     m_log.append(QString("[%1] %2").arg(QTime::currentTime().toString("HH:mm:ss"), entry));
@@ -1253,6 +1265,12 @@ void MainWindow::showConfigDialog()
     configDialog.move(x, y);
 
     configDialog.exec();
+
+    // Autosave: when the option is (or was just) enabled, persist the
+    // current settings + playlist immediately — not only on app close.
+    if (settings->value("autosave/enabled").toBool()) {
+        saveAutosavePlaylist();
+    }
 }
 
 void MainWindow::savePlaylist()
@@ -1303,6 +1321,44 @@ void MainWindow::loadRecentPlaylist()
             QMessageBox::critical(this, tr("Erro"), tr("Não foi possível carregar a playlist."));
         }
     }
+}
+
+void MainWindow::saveAutosavePlaylist()
+{
+    const QString path = QDir::homePath() + "/LaraRadio_autosave.txt";
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        qWarning() << "Autosave: could not write" << path;
+        return;
+    }
+    QTextStream out(&file);
+    for (const auto &item : playlist) {
+        out << item.name << "|" << item.path << "|" << item.duration << "|" << item.type << "\n";
+    }
+    file.close();
+    qInfo() << "Autosave: playlist salva em" << path;
+}
+
+void MainWindow::loadAutosavePlaylist()
+{
+    const QString path = QDir::homePath() + "/LaraRadio_autosave.txt";
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Autosave: no playlist to load at" << path;
+        return;
+    }
+    playlist.clear();
+    QTextStream in(&file);
+    while (!in.atEnd()) {
+        QStringList column = in.readLine().split('|');
+        if (column.size() == 4) {
+            playlist.push_back({column[0].trimmed(), column[1].trimmed(),
+                                column[2].trimmed(), column[3].trimmed()});
+        }
+    }
+    file.close();
+    updateAudioList();
+    qInfo() << "Autosave: playlist carregada de" << path << "(" << playlist.size() << "itens)";
 }
 
 void MainWindow::loadPlaylist()

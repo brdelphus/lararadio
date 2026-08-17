@@ -31,6 +31,8 @@ ConfigDialog::ConfigDialog(QWidget *parent)
     ui->stopFade->setChecked( settings.value("volume/stopFade").toBool() );
     ui->talkFade->setChecked( settings.value("volume/talkFade").toBool() );
 
+    ui->autosaveEnabled->setChecked( settings.value("autosave/enabled").toBool() );
+
     connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
 }
 
@@ -53,6 +55,7 @@ void ConfigDialog::accept()
     settings.setValue("volume/sayClockFade", ui->sayClockFade->isChecked());
     settings.setValue("volume/stopFade", ui->stopFade->isChecked());
     settings.setValue("volume/talkFade", ui->talkFade->isChecked());
+    settings.setValue("autosave/enabled", ui->autosaveEnabled->isChecked());
 
     this->close();
 }

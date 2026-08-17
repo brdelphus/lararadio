@@ -50,7 +50,7 @@
       <x>0</x>
       <y>0</y>
       <width>686</width>
-      <height>620</height>
+      <height>690</height>
      </rect>
     </property>
     <widget class="QGroupBox" name="groupBox">
@@ -419,11 +419,55 @@
       </property>
      </widget>
     </widget>
+    <widget class="QGroupBox" name="groupBox_autosave">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>545</y>
+       <width>681</width>
+       <height>80</height>
+      </rect>
+     </property>
+     <property name="title">
+      <string>Autosave</string>
+     </property>
+     <widget class="QCheckBox" name="autosaveEnabled">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>25</y>
+        <width>650</width>
+        <height>24</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Salvar configurações e playlist automaticamente</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="autosave_hint">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>52</y>
+        <width>650</width>
+        <height>18</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>8</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Salva em ~/LaraRadio_autosave.txt e carrega ao abrir o LaraRadio</string>
+      </property>
+     </widget>
+    </widget>
     <widget class="QLabel" name="label_8">
      <property name="geometry">
       <rect>
        <x>0</x>
-       <y>550</y>
+       <y>665</y>
        <width>431</width>
        <height>18</height>
       </rect>
@@ -441,7 +485,7 @@
      <property name="geometry">
       <rect>
        <x>0</x>
-       <y>575</y>
+       <y>630</y>
        <width>200</width>
        <height>30</height>
       </rect>

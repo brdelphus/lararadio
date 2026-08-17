@@ -76,6 +76,8 @@ public slots:
     void savePlaylist();
     void loadPlaylist();
     void loadRecentPlaylist();
+    void saveAutosavePlaylist();
+    void loadAutosavePlaylist();
     void clearPlaylist();
     void skipToNext();
     void checkAdvanceTrack();
@@ -105,6 +107,7 @@ private slots:
     void showConfigDialog();
     void exportLog();
     void addLog(const QString &entry);
+    void closeEvent(QCloseEvent *event) override;
 
 private:
     QAudioFormat getAudioFormat();

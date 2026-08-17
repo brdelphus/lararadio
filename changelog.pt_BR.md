@@ -173,6 +173,14 @@ Fork: https://github.com/brdelphus/lararadio
   (`setBtnKey`) para que traduzir o label nunca quebre os mapeamentos de
   áudio salvos. `languages/en_US.ts` agora tem 84 traduções finished;
   `pt_BR` usa as strings do source (pt-BR é a língua do código).
+- **Autosave de configurações e playlist**: novo groupBox "Autosave" no
+  ConfigDialog com checkbox "Salvar configurações e playlist
+  automaticamente". Quando ativado, a playlist atual é gravada em
+  `~/LaraRadio_autosave.txt` imediatamente ao clicar OK nas configs, de
+  novo ao fechar o app (`closeEvent`), e carregada na abertura no lugar da
+  última playlist manual (`showEvent`). Configs já persistem via QSettings.
+  O layout do ConfigDialog foi reorganizado (Volumes / Caminhos / Autosave
+  / Exportar / aviso) sem sobreposição de widgets.
 
 ### Problemas conhecidos (originais, não introduzidos por nós)
 - `TagLib::AudioProperties::length()` deprecated — usar

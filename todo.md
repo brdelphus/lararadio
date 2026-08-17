@@ -5,7 +5,7 @@
 - [ ] Playlist scheduling system (automatic programming by time/date)
 - [ ] Automatic insertion of jingles at configurable intervals
 - [ ] Built-in graphical equalizer
-- [ ] Automatic saving of settings and playlists
+- [x] Automatic saving of settings and playlists
 - [ ] Streaming integration (Icecast / Shoutcast)
 - [x] Automatic silence or audio failure detection
 - [ ] Audio preview (pre-listen)
