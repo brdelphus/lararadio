@@ -71,6 +71,10 @@ void ConfigDialog::accept()
     settings.setValue("stream/user", ui->streamUser->text().trimmed());
     settings.setValue("stream/pass", ui->streamPass->text());
 
+    // Grava no disco JÁ — o MainWindow reavalia o botão de stream logo após
+    // o exec() e precisa ver os valores novos (sem sync, só o destrutor grava).
+    settings.sync();
+
     this->close();
 }
 
