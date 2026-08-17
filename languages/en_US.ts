@@ -87,7 +87,7 @@
     <message>
         <location filename="../configdialog.ui" line="66"/>
         <source>Volumes</source>
-        <translation></translation>
+        <translation>Volumes</translation>
     </message>
     <message>
         <location filename="../configdialog.ui" line="88"/>
@@ -269,12 +269,12 @@ li.checked::marker { content: &quot;\2612&quot;; }
     <message>
         <location filename="../mainwindow.ui" line="182"/>
         <source>L</source>
-        <translation></translation>
+        <translation>L</translation>
     </message>
     <message>
         <location filename="../mainwindow.ui" line="200"/>
         <source>R</source>
-        <translation></translation>
+        <translation>R</translation>
     </message>
     <message>
         <location filename="../mainwindow.ui" line="218"/>
