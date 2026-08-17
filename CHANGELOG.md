@@ -8,6 +8,72 @@ Fork: https://github.com/brdelphus/lararadio
 
 ---
 
+## [1.0.6] — 2026-08-17 — Preview, streaming, i18n hardening
+
+### Added
+
+- **Audio preview (pre-listen)**: the playlist context menu gained a
+  "Pré Escuta" action (it was a disabled placeholder) that plays the
+  first 15 seconds of a track in a separate `QMediaPlayer`/`QAudioOutput`
+  pair, on its own sink (`audio/preview_device`, empty = system default).
+  Clicking the same item again stops the preview; clicking another item
+  switches. Independent from the playlist and from the broadcast — nothing
+  leaks into the on-air signal.
+- **Streaming integration (Icecast / Shoutcast)**: the app now streams the
+  broadcast sink's monitor to an Icecast/Shoutcast server through an
+  ffmpeg child process (MP3 128 kbps). A new toggle button below TALK
+  (share icon) starts/stops the stream and turns green while on air.
+  ConfigDialog gained a "Streaming" group with server URL, user and
+  password (`stream/url|user|pass`) plus stream name and description
+  (`stream/name|description`, sent as `ice_name`/`ice_description`).
+  The ffmpeg source client identifies itself as `LaraRadio`
+  (`-user_agent`). The stream button stays disabled until the config is
+  valid, and re-evaluates when the ConfigDialog closes.
+- **Live on-air metadata (curr playing)**: every track/jingle change (and
+  when the stream starts) the app updates the Icecast mount title via
+  `/admin/metadata` with "title - artist" from the TagLib tags, using
+  the source credentials. If the mount is not ready yet (ffmpeg still
+  connecting right after stream start) the update retries after 2 s.
+- **Configurable output device** (`audio/output_device`): the main players
+  (both AudioPlayers + time player) can be pointed at a specific sink
+  (e.g. the virtual `broadcast` sink) via `AudioPlayer::setOutputDevice()`.
+  Empty = system default. Matching by device id or description.
+
+### Changed
+
+- **i18n**: `pt_BR.ts` header fixed (`language="pt_BR"`, was a hardcoded
+  `br_FR`); empty translations in `en_US.ts` filled (Volumes, L, R);
+  the playlist context menu actions (Mark as Next, Play This, Preview,
+  Delete) were hardcoded strings and now go through `tr()`;
+  `lrelease` is mandatory after every `lupdate` — a stale `.qm` makes
+  new strings fall back to the pt-BR source.
+- **Infra (insight)**: virtual `broadcast` sink (PipeWire null sink,
+  persisted in `/etc/pipewire/pipewire.conf.d/`) and a monitoring
+  loopback from `broadcast.monitor` to the system default sink (no
+  hardcoded device, `/etc/pipewire/pipewire-pulse.conf.d/`). Local
+  Icecast runs on port 9000 (runit service) — port 8000 was occupied by
+  a docker container.
+
+### Fixed
+
+- **Stream toggle crash (2×)**: the `QProcess::finished` handler used the
+  `m_streamProc` member, which is already null during manual shutdown —
+  SIGSEGV in `deleteLater()` and later in `readAllStandardOutput()`.
+  The handler now only uses `sender()`, and shutdown detaches the member
+  before `kill()` (no blocking `waitForFinished`).
+- **Stream button did not enable after saving config**: the ConfigDialog's
+  `QSettings` only flushed to disk in its destructor (after the button
+  re-evaluation); `accept()` now calls `sync()` immediately.
+- **Stream button "didn't turn on"**: `-user_agent` is an http *output*
+  protocol option — placed before `-i` ffmpeg 6.1 dies with
+  "Option user_agent not found" before streaming anything. Moved after
+  `-f mp3`, before the URL.
+- **Orphan ffmpeg holding the Icecast mount**: killing the app with
+  `kill -9` leaves the ffmpeg child alive holding "/live" ("Mountpoint
+  in use" on reconnect). The app now keeps a PID lock
+  (`/tmp/lararadio_stream.pid`), kills the orphan on the next stream
+  start and clears the lock on process exit.
+
 ## [1.0.5] — 2026-07-27 — Changes on top of original 1.0.4
 
 ### Changed
