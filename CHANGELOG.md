@@ -160,9 +160,22 @@ Fork: https://github.com/brdelphus/lararadio
   overwritten by `updateAudioList(true)`.
 - **Playlist reorder drag (manual)**: internal drag & drop reorders the
   playlist keeping the `std::vector` in sync (Qt's `InternalMove` only
-  reorders the tree — a known desync pitfall). The drop handler moves the
-  vector itself and rebuilds the tree after the drop event finishes.
-  Note: still being fine-tuned.
+  reorders the tree — a known desync pitfall). Implemented as a
+  `PlaylistTree` subclass with a manual `QDrag` carrying the source row in
+  the mimeData; drop target is chosen by the half of the item under the
+  cursor (top half = insert before, bottom half = insert after) and a
+  drop indicator shows where it will land. The cursor shows a badge with
+  the track name + duration while dragging.
+- **Log / playback report export**: the app keeps an in-memory playback
+  log (track plays, jingles, TALK on/off, Loop triggers, timestamps) and
+  the ConfigDialog gained an "Export Log / Playback Report" button that
+  writes `LaraRadio_playback_report.txt` in the user's home directory.
+- **Clean i18n**: every user-facing string now goes through `tr()`
+  (ButtonHole context menu, Loop button label, export dialogs). The Loop
+  button's settings key is separated from its visible text (`setBtnKey`)
+  so translating the label never breaks saved audio mappings.
+  `languages/en_US.ts` now has 84 finished translations; `pt_BR` uses the
+  source strings (pt-BR is the code's source language).
 
 ### Known issues (original, not introduced by us)
 - TagLib `AudioProperties::length()` is deprecated in favor of
