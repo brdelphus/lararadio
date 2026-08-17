@@ -4,7 +4,12 @@
 - [x] Drag and drop support for playlist items
 - [ ] Playlist scheduling system (automatic programming by time/date)
 - [x] Automatic insertion of jingles at configurable intervals (X a cada Y músicas)
-- [ ] Built-in graphical equalizer
+- [ ] Migrar QMediaPlayer → libmpv (wrapper mpv_handle* em AudioPlayer/ButtonHole/timeplayer/preview)
+      — habilita filtros de áudio em tempo real (af-command), saída por sink
+      (audio-device), pode remover transcodeIfNeeded; retestar fade/crossfade
+      e avanço de playlist
+- [ ] Built-in graphical equalizer (10 bandas 31Hz–16kHz, sliders em tempo
+      real via af-command no mpv — depende da migração acima)
 - [x] Automatic saving of settings and playlists
 - [x] Streaming integration (Icecast / Shoutcast) — botão liga/desliga, URL/user/pass + name/description, curr playing via /admin/metadata
 - [x] Automatic silence or audio failure detection
