@@ -73,6 +73,11 @@ void ConfigDialog::on_btn_searchJinglePath_clicked()
     }
 }
 
+void ConfigDialog::on_btn_export_log_clicked()
+{
+    emit exportLogRequested();
+}
+
 void ConfigDialog::on_btn_searchTimePath_clicked()
 {
     QString dir = QFileDialog::getExistingDirectory(this, tr("Selecionar pasta de Locução de Hora"), settings.value("files/audioTimeDir", QDir::homePath()).toString());

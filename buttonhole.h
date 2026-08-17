@@ -18,6 +18,7 @@ class ButtonHole : public QWidget
 
         void setPositon(int newX, int newY);
         void setBtnText(QString newText);
+        void setBtnKey(QString newKey);
         void setLoopMode(bool loop);
         bool isPlaying();
         void stopPlayback();
@@ -42,6 +43,7 @@ class ButtonHole : public QWidget
 
         QString filename = "";
         QString text = "";
+        QString btnKey = "";
         int x = 0;
         int y = 0;
         int width = 60;

@@ -437,6 +437,19 @@
       <string>Atenção: para as alterações surtirem efeito, reinicie o LaraRadio.</string>
      </property>
     </widget>
+    <widget class="QPushButton" name="btn_export_log">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>575</y>
+       <width>200</width>
+       <height>30</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Exportar Log / Playback Report</string>
+     </property>
+    </widget>
    </widget>
   </widget>
  </widget>

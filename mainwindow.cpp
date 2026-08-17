@@ -261,6 +261,7 @@ void MainWindow::init()
         ButtonHole *bh = new ButtonHole(this);
         bh->setGeometry(340 + ((bi-1)*70), 574, 60, 40);
         bh->setBtnText(QString::number( bi ));
+        bh->setBtnKey(QString::number( bi ));
         bh->show();
 
         buttonHole.push_back( bh );
@@ -270,13 +271,15 @@ void MainWindow::init()
     // Left of the "Botoeira" label (window is 1048x622 — below is clipped).
     loopBh = new ButtonHole(this);
     loopBh->setGeometry(180, 574, 60, 40);
-    loopBh->setBtnText("Loop");
+    loopBh->setBtnText(tr("Loop"));
+    loopBh->setBtnKey("Loop");
     loopBh->setLoopMode(true);
     loopBh->show();
 
     // Priority between loop and playlist: when the loop is pressed while the
     // playlist is playing, fade the playlist out and let the loop take over.
     connect(loopBh, &ButtonHole::triggered, this, [=]() {
+        addLog(tr("LOOP acionado (fade out da playlist)"));
         if (audioplayer1.isPlaying()) audioplayer1.fadeOut();
         if (audioplayer2.isPlaying()) audioplayer2.fadeOut();
     });
@@ -579,9 +582,11 @@ void MainWindow::on_btn_talk_clicked()
     if(Talking==false) {
         Talking=true;
         ui->btn_talk->setStyleSheet("background-color: red;");
+        addLog(tr("TALK ON (locução ativada)"));
     } else {
         Talking=false;
         ui->btn_talk->setStyleSheet("");
+        addLog(tr("TALK OFF (locução desativada)"));
     }
 
     // ON AIR light: same mechanism as the old standalone button, now tied to
@@ -903,6 +908,7 @@ void MainWindow::next()
             }
 
             if(type=="music"){
+                addLog(tr("PLAY [musica] %1").arg(QFileInfo(path).fileName()));
                 if(audioplayer2.isPlaying()){
                     audioplayer1.addMedia( path );
                     audioplayer1.Play();
@@ -922,7 +928,7 @@ void MainWindow::next()
             }
 
             if(type=="jingle"){
-
+                addLog(tr("PLAY [vinheta] %1").arg(QFileInfo(path).fileName()));
                 if(audioplayer2.isPlaying()){
                     audioplayer1.addMedia( path );
                     audioplayer1.maxVolume = 1.0f;
@@ -1210,10 +1216,36 @@ void MainWindow::showAboutDialog()
     aboutDialog.exec();
 }
 
+void MainWindow::addLog(const QString &entry)
+{
+    m_log.append(QString("[%1] %2").arg(QTime::currentTime().toString("HH:mm:ss"), entry));
+    if (m_log.size() > 2000) m_log.removeFirst();
+}
+
+void MainWindow::exportLog()
+{
+    const QString path = QDir::homePath() + "/LaraRadio_playback_report.txt";
+    QFile f(path);
+    if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::warning(this, tr("Exportar Log"), tr("Não foi possível criar:\n%1").arg(path));
+        return;
+    }
+    QTextStream out(&f);
+    out << "LaraRadio — Log / Playback Report\n";
+    out << "Gerado em: " << QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss") << "\n";
+    out << "Máquina: " << QSysInfo::machineHostName() << "\n";
+    out << "----------------------------------------\n";
+    for (const QString &line : m_log) out << line << "\n";
+    f.close();
+    QMessageBox::information(this, tr("Exportar Log"),
+        tr("Log exportado com sucesso para:\n%1\n\n(%2 linhas)").arg(path).arg(m_log.size()));
+}
+
 void MainWindow::showConfigDialog()
 {
     ConfigDialog configDialog;
     configDialog.setWindowTitle(tr("Configurar"));
+    connect(&configDialog, &ConfigDialog::exportLogRequested, this, &MainWindow::exportLog);
 
     QRect parentRect = this->geometry();
     int x = parentRect.center().x() - configDialog.width() / 2;

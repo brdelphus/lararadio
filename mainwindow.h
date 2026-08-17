@@ -103,6 +103,8 @@ private slots:
 
     void showAboutDialog();
     void showConfigDialog();
+    void exportLog();
+    void addLog(const QString &entry);
 
 private:
     QAudioFormat getAudioFormat();
@@ -159,6 +161,9 @@ private:
     // ButtonHole *buttonHole;
     std::vector<ButtonHole*> buttonHole;
     ButtonHole *loopBh = nullptr;
+
+    // Playback log (exported to a txt in the user's home via ConfigDialog).
+    QStringList m_log;
 
     bool m_uiReady = false;
     bool m_recentPlaylistLoaded = false;

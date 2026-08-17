@@ -47,12 +47,32 @@
 <context>
     <name>ButtonHole</name>
     <message>
-        <location filename="../buttonhole.cpp" line="68"/>
+        <location filename="../buttonhole.cpp" line="63"/>
+        <source>Carregar Áudio</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../buttonhole.cpp" line="64"/>
+        <source>Tocar Áudio</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../buttonhole.cpp" line="65"/>
+        <source>Parar Áudio</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../buttonhole.cpp" line="66"/>
+        <source>Apagar Áudio</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../buttonhole.cpp" line="75"/>
         <source>Carregar Audio</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../buttonhole.cpp" line="68"/>
+        <location filename="../buttonhole.cpp" line="75"/>
         <source>Arquivos de Audio</source>
         <translation type="unfinished"></translation>
     </message>
@@ -146,6 +166,11 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <location filename="../configdialog.ui" line="450"/>
+        <source>Exportar Log / Playback Report</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../configdialog.cpp" line="26"/>
         <source>Script ON AIR (ex: ~/bin/usbrelay2)</source>
         <translation type="unfinished"></translation>
@@ -161,7 +186,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../configdialog.cpp" line="78"/>
+        <location filename="../configdialog.cpp" line="83"/>
         <source>Selecionar pasta de Locução de Hora</source>
         <translation type="unfinished"></translation>
     </message>
@@ -175,7 +200,7 @@
     </message>
     <message>
         <location filename="../mainwindow.ui" line="73"/>
-        <location filename="../mainwindow.cpp" line="802"/>
+        <location filename="../mainwindow.cpp" line="769"/>
         <source>Nome</source>
         <translation type="unfinished"></translation>
     </message>
@@ -323,7 +348,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
     </message>
     <message>
         <location filename="../mainwindow.ui" line="715"/>
-        <location filename="../mainwindow.cpp" line="1241"/>
+        <location filename="../mainwindow.cpp" line="1209"/>
         <source>Sobre o LaraRadio</source>
         <translation type="unfinished"></translation>
     </message>
@@ -384,77 +409,127 @@ li.checked::marker { content: &quot;\2612&quot;; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="218"/>
+        <location filename="../mainwindow.cpp" line="219"/>
         <source>Versão: </source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1082"/>
+        <location filename="../mainwindow.cpp" line="274"/>
+        <source>Loop</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../mainwindow.cpp" line="282"/>
+        <source>LOOP acionado (fade out da playlist)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../mainwindow.cpp" line="585"/>
+        <source>TALK ON (locução ativada)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../mainwindow.cpp" line="589"/>
+        <source>TALK OFF (locução desativada)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../mainwindow.cpp" line="911"/>
+        <source>PLAY [musica] %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../mainwindow.cpp" line="931"/>
+        <source>PLAY [vinheta] %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../mainwindow.cpp" line="1050"/>
         <source>Hora Certa</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1254"/>
+        <location filename="../mainwindow.cpp" line="1230"/>
+        <location filename="../mainwindow.cpp" line="1240"/>
+        <source>Exportar Log</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../mainwindow.cpp" line="1230"/>
+        <source>Não foi possível criar:
+%1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../mainwindow.cpp" line="1241"/>
+        <source>Log exportado com sucesso para:
+%1
+
+(%2 linhas)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../mainwindow.cpp" line="1247"/>
         <source>Configurar</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1266"/>
+        <location filename="../mainwindow.cpp" line="1260"/>
         <source>Salvar Arquivo</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1266"/>
-        <location filename="../mainwindow.cpp" line="1320"/>
+        <location filename="../mainwindow.cpp" line="1260"/>
+        <location filename="../mainwindow.cpp" line="1314"/>
         <source>Arquivos de Texto</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1266"/>
-        <location filename="../mainwindow.cpp" line="1320"/>
+        <location filename="../mainwindow.cpp" line="1260"/>
+        <location filename="../mainwindow.cpp" line="1314"/>
         <source>Todos os arquivos</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1276"/>
+        <location filename="../mainwindow.cpp" line="1270"/>
         <source>Sucesso</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1276"/>
+        <location filename="../mainwindow.cpp" line="1270"/>
         <source>Sua playlist foi salva o com sucesso!</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1280"/>
-        <location filename="../mainwindow.cpp" line="1309"/>
-        <location filename="../mainwindow.cpp" line="1353"/>
+        <location filename="../mainwindow.cpp" line="1274"/>
+        <location filename="../mainwindow.cpp" line="1303"/>
+        <location filename="../mainwindow.cpp" line="1347"/>
         <source>Erro</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1280"/>
+        <location filename="../mainwindow.cpp" line="1274"/>
         <source>Não foi possível salvar a playlist.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1309"/>
-        <location filename="../mainwindow.cpp" line="1353"/>
+        <location filename="../mainwindow.cpp" line="1303"/>
+        <location filename="../mainwindow.cpp" line="1347"/>
         <source>Não foi possível carregar a playlist.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1317"/>
+        <location filename="../mainwindow.cpp" line="1311"/>
         <source>Opss</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1317"/>
+        <location filename="../mainwindow.cpp" line="1311"/>
         <source>Não é possivel carregar estando NO AR.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1320"/>
+        <location filename="../mainwindow.cpp" line="1314"/>
         <source>Carregar Playlist</source>
         <translation type="unfinished"></translation>
     </message>

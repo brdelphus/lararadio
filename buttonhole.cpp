@@ -49,14 +49,21 @@ void ButtonHole::setBtnText(QString newText)
     button->setText( text );
 }
 
+// Settings key is FIXED (language-independent) so translating the visible
+// button label never breaks saved audio mappings (e.g. "btn_Loop").
+void ButtonHole::setBtnKey(QString newKey)
+{
+    btnKey = newKey;
+}
+
 void ButtonHole::bntContextMenu(QPoint pos)
 {
     QMenu *menu = new QMenu(this);
 
-    QAction* loadAudio = new QAction(QIcon(":/images/icons/go-bottom.svg"), "Carregar Áudio", this);
-    QAction* playAudio = new QAction(QIcon(":/images/icons/media-playback-start.svg"), "Tocar Áudio", this);
-    QAction* stopAudio = new QAction(QIcon(":/images/icons/media-playback-stop.svg"), "Parar Áudio", this);
-    QAction* deleteAudio = new QAction(QIcon(":/images/icons/edit-delete.svg"), "Apagar Áudio", this);
+    QAction* loadAudio = new QAction(QIcon(":/images/icons/go-bottom.svg"), tr("Carregar Áudio"), this);
+    QAction* playAudio = new QAction(QIcon(":/images/icons/media-playback-start.svg"), tr("Tocar Áudio"), this);
+    QAction* stopAudio = new QAction(QIcon(":/images/icons/media-playback-stop.svg"), tr("Parar Áudio"), this);
+    QAction* deleteAudio = new QAction(QIcon(":/images/icons/edit-delete.svg"), tr("Apagar Áudio"), this);
     menu->addAction( loadAudio );
     menu->addAction( playAudio );
     menu->addAction( stopAudio );
@@ -68,13 +75,13 @@ void ButtonHole::bntContextMenu(QPoint pos)
         QString filename = QFileDialog::getOpenFileName(this, tr("Carregar Audio"), QDir::homePath(), tr("Arquivos de Audio")+" (*.mp3 *.wav *.ogg *.flac *.mp4);;");
 
         if (!filename.isEmpty()) {
-            settings->setValue("buttonhole/btn_"+text, filename);
+            settings->setValue("buttonhole/btn_"+btnKey, filename);
             button->setStyleSheet("background-color: #fc0; color: #000;");
         }
     });
 
     connect(deleteAudio, &QAction::triggered, this, [=]() {
-        settings->setValue("buttonhole/btn_"+text, "");
+        settings->setValue("buttonhole/btn_"+btnKey, "");
         button->setStyleSheet("");
     });
 
@@ -90,7 +97,7 @@ void ButtonHole::bntContextMenu(QPoint pos)
 void ButtonHole::buttonHoleClick()
 {
     // /home/gutierre69/Documentos/Studio/EFEITOS/Brasil_sil_sil.mp3
-    filename = settings->value("buttonhole/btn_"+text).toString();
+    filename = settings->value("buttonhole/btn_"+btnKey).toString();
     if(filename=="")
         return;
 
@@ -162,7 +169,7 @@ void ButtonHole::flash()
         return;
     }
 
-    if(settings->value("buttonhole/btn_"+text).toString()!="") button->setStyleSheet("background-color: #fc0; color: #000;");
+    if(settings->value("buttonhole/btn_"+btnKey).toString()!="") button->setStyleSheet("background-color: #fc0; color: #000;");
 }
 
 void ButtonHole::keyPressEvent(QKeyEvent *event){
