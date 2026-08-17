@@ -68,6 +68,7 @@ qt_add_qml_module(appLaraRadio
 
         RESOURCES mainwindow.ui
         SOURCES mainwindow.h mainwindow.cpp
+        SOURCES playlisttree.h
         SOURCES audioplayer.cpp
         SOURCES audioplayer.h
         SOURCES timerclock.h

@@ -30,7 +30,7 @@
      </rect>
     </property>
    </widget>
-   <widget class="QTreeWidget" name="audio_list">
+   <widget class="PlaylistTree" name="audio_list">
     <property name="geometry">
      <rect>
       <x>530</x>
@@ -40,13 +40,13 @@
      </rect>
     </property>
     <property name="showDropIndicator" stdset="0">
-     <bool>false</bool>
+     <bool>true</bool>
     </property>
     <property name="dragEnabled">
      <bool>false</bool>
     </property>
     <property name="dragDropMode">
-     <enum>QAbstractItemView::DragDropMode::NoDragDrop</enum>
+     <enum>QAbstractItemView::DragDropMode::DragDrop</enum>
     </property>
     <property name="defaultDropAction">
      <enum>Qt::DropAction::MoveAction</enum>
@@ -829,4 +829,11 @@ QSlider::add-page:vertical {
   <include location="resources.qrc"/>
  </resources>
  <connections/>
+ <customwidgets>
+  <customwidget>
+   <class>PlaylistTree</class>
+   <extends>QTreeWidget</extends>
+   <header>playlisttree.h</header>
+  </customwidget>
+ </customwidgets>
 </ui>

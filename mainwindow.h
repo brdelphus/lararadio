@@ -110,9 +110,6 @@ private:
     Playlist makePlaylistItem(const QString &filepath, const QString &type);
     void addDroppedUrls(const QList<QUrl> &urls, int insertRow);
 
-protected:
-    bool eventFilter(QObject *watched, QEvent *event) override;
-
     Ui::MainWindow *ui;
     AudioPlayer audioplayer1;
     AudioPlayer audioplayer2;

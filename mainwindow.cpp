@@ -3,6 +3,7 @@
 #include "about_dialog.h"
 #include "configdialog.h"
 #include "custonIconProvider.h"
+#include "playlisttree.h"
 #include <QMessageBox>
 #include "QFileSystemModel"
 #include "QTreeWidget"
@@ -284,11 +285,31 @@ void MainWindow::init()
 
     // Drag & drop into the playlist (external drops only).
     // Internal reorder is handled 100% manually in eventFilter() — Qt's
-    // InternalMove reorders only the tree and desyncs from the vector.
-    ui->audio_list->setAcceptDrops(true);
-    ui->audio_list->setDragEnabled(true);
-    ui->audio_list->setDragDropMode(QAbstractItemView::DragDrop);
-    ui->audio_list->installEventFilter(this);
+    // built-in drag (InternalMove OR DragDrop mode) always messes with the
+    // tree visuals (ghost item, hiding, stacking). We disable it and use our
+    // own QDrag carrying the source row in the mimeData.
+    // PlaylistTree subclass handles ALL drag & drop itself (manual QDrag with
+    // the source row in the mimeData) — it only emits what it wants done.
+    connect(ui->audio_list, &PlaylistTree::reorderRequested, this, [=](int fromRow, int toRow) {
+        if (fromRow < 0 || fromRow >= (int)playlist.size()) return;
+        Playlist item = playlist[fromRow];
+        playlist.erase(playlist.begin() + fromRow);
+        if (toRow > fromRow) toRow--;
+        playlist.insert(playlist.begin() + toRow, item);
+
+        // Keep current_play pointing at the same track.
+        if (current_play == fromRow) {
+            current_play = toRow;
+        } else if (current_play > fromRow && current_play <= toRow) {
+            current_play--;
+        } else if (current_play < fromRow && current_play >= toRow) {
+            current_play++;
+        }
+        QTimer::singleShot(0, this, [=]() { updateAudioList(); });
+    });
+    connect(ui->audio_list, &PlaylistTree::urlsDropped, this, [=](const QList<QUrl> &urls, int row) {
+        addDroppedUrls(urls, row);
+    });
 
     m_uiReady = true;
     if (m_displayTimer) {
@@ -517,65 +538,6 @@ Playlist MainWindow::makePlaylistItem(const QString &filepath, const QString &ty
         }
     }
     return item;
-}
-
-bool MainWindow::eventFilter(QObject *watched, QEvent *event)
-{
-    if (watched == ui->audio_list) {
-        if (event->type() == QEvent::DragEnter || event->type() == QEvent::DragMove) {
-            auto *dragEvent = static_cast<QDragMoveEvent *>(event);
-            // Accept ANY drag (internal reorder or external files); we decide
-            // in the Drop handler what to do with it.
-            dragEvent->accept();
-            return true;
-        }
-        if (event->type() == QEvent::Drop) {
-            auto *dropEvent = static_cast<QDropEvent *>(event);
-            qDebug() << "DROP source=" << dropEvent->source()
-                     << "self=" << ui->audio_list
-                     << "urls=" << dropEvent->mimeData()->hasUrls()
-                     << "formats=" << dropEvent->mimeData()->formats()
-                     << "pos=" << dropEvent->position().toPoint()
-                     << "row=" << ui->audio_list->indexAt(dropEvent->position().toPoint()).row();
-            if (dropEvent->source() == ui->audio_list) {
-                // Internal reorder: move the vector ourselves, then rebuild the
-                // tree AFTER the drop event finishes (singleShot) — calling
-                // clear() inside the drop corrupts the view (stacked items).
-                QList<QTreeWidgetItem*> sel = ui->audio_list->selectedItems();
-                int fromRow = -1;
-                if (!sel.isEmpty())
-                    fromRow = ui->audio_list->indexOfTopLevelItem(sel.first());
-                int toRow = ui->audio_list->indexAt(dropEvent->position().toPoint()).row();
-                qDebug() << "  internal fromRow=" << fromRow << "toRow=" << toRow
-                         << "selCount=" << sel.size();
-
-                if (fromRow >= 0 && fromRow != toRow) {
-                    Playlist item = playlist[fromRow];
-                    playlist.erase(playlist.begin() + fromRow);
-                    if (toRow > fromRow) toRow--;
-                    playlist.insert(playlist.begin() + toRow, item);
-
-                    // Keep current_play pointing at the same track.
-                    if (current_play == fromRow) {
-                        current_play = toRow;
-                    } else if (current_play > fromRow && current_play <= toRow) {
-                        current_play--;
-                    } else if (current_play < fromRow && current_play >= toRow) {
-                        current_play++;
-                    }
-
-                    QTimer::singleShot(0, this, [=]() { updateAudioList(); });
-                }
-            } else if (dropEvent->mimeData()->hasUrls()) {
-                int row = ui->audio_list->indexAt(dropEvent->position().toPoint()).row();
-                addDroppedUrls(dropEvent->mimeData()->urls(), row);
-            }
-            dropEvent->setDropAction(Qt::CopyAction);
-            dropEvent->accept();
-            return true;
-        }
-    }
-    return QMainWindow::eventFilter(watched, event);
 }
 
 void MainWindow::addDroppedUrls(const QList<QUrl> &urls, int insertRow)
