@@ -8,6 +8,6 @@
 - [x] Automatic saving of settings and playlists
 - [ ] Streaming integration (Icecast / Shoutcast)
 - [x] Automatic silence or audio failure detection
-- [ ] Audio preview (pre-listen)
+- [x] Audio preview (pre-listen) — menu de contexto, 15s, sink próprio (audio/preview_device)
 - [ ] Select output device for broadcast and monitoring separately
 - [x] Add items to the playlist below a pre-selected entry
