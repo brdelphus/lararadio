@@ -40,6 +40,8 @@ ConfigDialog::ConfigDialog(QWidget *parent)
     ui->streamUrl->setText( settings.value("stream/url").toString() );
     ui->streamUser->setText( settings.value("stream/user").toString() );
     ui->streamPass->setText( settings.value("stream/pass").toString() );
+    ui->streamName->setText( settings.value("stream/name").toString() );
+    ui->streamDesc->setText( settings.value("stream/description").toString() );
 
     connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
 }
@@ -70,6 +72,8 @@ void ConfigDialog::accept()
     settings.setValue("stream/url", ui->streamUrl->text().trimmed());
     settings.setValue("stream/user", ui->streamUser->text().trimmed());
     settings.setValue("stream/pass", ui->streamPass->text());
+    settings.setValue("stream/name", ui->streamName->text().trimmed());
+    settings.setValue("stream/description", ui->streamDesc->text().trimmed());
 
     // Grava no disco JÁ — o MainWindow reavalia o botão de stream logo após
     // o exec() e precisa ver os valores novos (sem sync, só o destrutor grava).

@@ -46,6 +46,7 @@ typedef struct Playlist
 
 class QTimer;
 class QProcess;
+class QNetworkAccessManager;
 
 class MainWindow : public QMainWindow
 {
@@ -103,6 +104,7 @@ private slots:
     void changeLanguage(QString lang);
     void audioOptionsMenu(QPoint pos);
     void updateStreamButtonState();
+    void updateStreamMetadata();
 
     void unSelectedJingle();
     void unSelectedFiles();
@@ -185,6 +187,7 @@ private:
     // Streaming (Icecast/Shoutcast): ffmpeg child capturando o sink broadcast.
     QProcess *m_streamProc = nullptr;
     bool m_streamOn = false;
+    QNetworkAccessManager *m_net = nullptr;
 
     bool m_uiReady = false;
     bool m_recentPlaylistLoaded = false;

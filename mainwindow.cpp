@@ -20,6 +20,9 @@
 #include <QMediaPlayer>
 #include <QAudioBufferOutput>
 #include <QProcess>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
 #include <QAudioBuffer>
 #include <QSlider>
 #include <QIcon>
@@ -29,6 +32,7 @@
 #include <QDesktopServices>
 #include <QFile>
 #include <QUrl>
+#include <QUrlQuery>
 #include <QFileInfo>
 #include <QDirIterator>
 #include <QDragEnterEvent>
@@ -188,6 +192,8 @@ void MainWindow::init()
 
     // Botão de stream desabilitado até haver config válida (stream/*).
     updateStreamButtonState();
+
+    m_net = new QNetworkAccessManager(this);
 
     model = new QFileSystemModel(this);
     model->setRootPath( QDir::homePath() );
@@ -680,6 +686,42 @@ void MainWindow::updateStreamButtonState()
              << "enabled=" << ui->btn_stream->isEnabled();
 }
 
+// Atualiza o "curr playing" (título) do mount no Icecast via /admin/metadata.
+// O source autentica com as próprias credenciais. Só Icecast — Shoutcast tem
+// protocolo próprio de metadata, não suportado aqui.
+void MainWindow::updateStreamMetadata()
+{
+    if (!m_streamOn || !m_net) return;
+    const QString url = settings->value("stream/url").toString().trimmed();
+    if (url.isEmpty() || url.contains("shoutcast://")) return;
+    if (current_play < 0 || current_play >= (int)playlist.size()) return;
+    const QString song = playlist[current_play].name;
+    if (song.isEmpty()) return;
+
+    // host:porta + mount a partir da URL (ex: localhost:9000/live → /live).
+    QString host = url;
+    if (host.contains("://")) host = host.mid(host.indexOf("://") + 3);
+    QString mount = "/";
+    const int slash = host.indexOf('/');
+    if (slash >= 0) { mount = host.mid(slash); host = host.left(slash); }
+    if (!mount.startsWith('/')) mount.prepend('/');
+
+    QUrl reqUrl(QString("http://%1/admin/metadata").arg(host));
+    QUrlQuery q;
+    q.addQueryItem("mount", mount);
+    q.addQueryItem("mode", "updinfo");
+    q.addQueryItem("song", song);
+    reqUrl.setQuery(q);
+
+    QNetworkRequest req(reqUrl);
+    const QString user = settings->value("stream/user").toString().trimmed();
+    const QString pass = settings->value("stream/pass").toString();
+    req.setRawHeader("Authorization",
+                     "Basic " + QString(user + ":" + pass).toUtf8().toBase64());
+    QNetworkReply *reply = m_net->get(req);
+    connect(reply, &QNetworkReply::finished, reply, &QObject::deleteLater);
+}
+
 // Stream ON/OFF (Icecast/Shoutcast): dispara/para um ffmpeg que captura o
 // monitor do sink de broadcast e envia pro servidor configurado (stream/*).
 // A URL do ConfigDialog aceita protocolo explícito ou assume Icecast.
@@ -724,7 +766,7 @@ void MainWindow::on_btn_stream_clicked()
 
     m_streamProc = new QProcess(this);
     m_streamProc->setProgram("ffmpeg");
-    m_streamProc->setArguments({
+    QStringList args = {
         "-hide_banner", "-loglevel", "error",
         "-f", "pulse", "-i", source,
         "-c:a", "libmp3lame", "-b:a", "128k",
@@ -733,8 +775,15 @@ void MainWindow::on_btn_stream_clicked()
         // depois do -f e antes da URL (em posição global o ffmpeg 6.1
         // responde "Option user_agent not found" e o stream morre no start).
         "-user_agent", "LaraRadio",
-        target
-    });
+    };
+    // Identificação do stream no Icecast (ice_name/ice_description são
+    // opções do protocolo icecast, mesma posição de output).
+    const QString streamName = settings->value("stream/name").toString().trimmed();
+    const QString streamDesc = settings->value("stream/description").toString().trimmed();
+    if (!streamName.isEmpty()) args << "-ice_name" << streamName;
+    if (!streamDesc.isEmpty()) args << "-ice_description" << streamDesc;
+    args << target;
+    m_streamProc->setArguments(args);
     m_streamProc->setProcessChannelMode(QProcess::MergedChannels);
     connect(m_streamProc, &QProcess::finished, this, [=](int code, QProcess::ExitStatus) {
         // NUNCA usar m_streamProc aqui: no desligamento manual o member já é
@@ -758,6 +807,7 @@ void MainWindow::on_btn_stream_clicked()
     ui->btn_stream->setChecked(true);
     ui->btn_stream->setStyleSheet("background-color: #0a7d0a;");
     addLog(tr("STREAM ON (%1)").arg(target));
+    updateStreamMetadata();
 }
 
 void MainWindow::setVolumeSpeak(float volume)
@@ -1067,6 +1117,7 @@ void MainWindow::next()
 
             if(type=="music"){
                 addLog(tr("PLAY [musica] %1").arg(QFileInfo(path).fileName()));
+                updateStreamMetadata();
 
                 // Auto-jingle: count played tracks; every N tracks, insert M
                 // random jingles from the jingle dir right after this one.
@@ -1098,6 +1149,7 @@ void MainWindow::next()
 
             if(type=="jingle"){
                 addLog(tr("PLAY [vinheta] %1").arg(QFileInfo(path).fileName()));
+                updateStreamMetadata();
                 if(audioplayer2.isPlaying()){
                     audioplayer1.addMedia( path );
                     audioplayer1.maxVolume = 1.0f;

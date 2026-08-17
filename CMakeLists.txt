@@ -43,7 +43,7 @@ project(appLaraRadio VERSION ${PROJECT_VERSION} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Quick Widgets Multimedia MultimediaWidgets)
+find_package(Qt6 REQUIRED COMPONENTS Quick Widgets Multimedia MultimediaWidgets Network)
 set(QT_USE_QTMULTIMEDIA TRUE)
 set(QT_USE_QTMULTIMEDIAWIDGETS TRUE)
 set(QT_DEBUG_PLUGINS TRUE)
@@ -104,6 +104,7 @@ target_link_libraries(appLaraRadio
     Qt6::Widgets
     Qt6::Multimedia
     Qt6::MultimediaWidgets
+    Qt6::Network
     tag
 )
 
