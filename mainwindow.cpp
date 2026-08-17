@@ -149,6 +149,28 @@ void MainWindow::init()
     timeplayer->setAudioOutput(timeAudioOutput);
     timeAudioOutput->setVolume(1.0f);
 
+    // Preview (pré-escuta): player separado, toca os 15s iniciais de um item
+    // da playlist. Sink: audio/preview_device (vazio = padrão do sistema).
+    previewPlayer = new QMediaPlayer(this);
+    previewOutput = new QAudioOutput(this);
+    const QString previewDevId = settings->value("audio/preview_device").toString();
+    if (!previewDevId.isEmpty()) {
+        for (const QAudioDevice &d : QMediaDevices::audioOutputs()) {
+            if (d.id() == previewDevId) {
+                previewOutput->setDevice(d);
+                break;
+            }
+        }
+    }
+    previewOutput->setVolume(1.0);
+    previewPlayer->setAudioOutput(previewOutput);
+    previewTimer = new QTimer(this);
+    previewTimer->setSingleShot(true);
+    connect(previewTimer, &QTimer::timeout, this, [=]() {
+        previewPlayer->stop();
+        m_previewPath.clear();
+    });
+
     model = new QFileSystemModel(this);
     model->setRootPath( QDir::homePath() );
     model->setIconProvider(new CustomIconProvider);
@@ -382,10 +404,10 @@ void MainWindow::audioOptionsMenu(QPoint pos)
 
     QMenu *menu = new QMenu(this);
 
-    QAction* markHasNext = new QAction(QIcon(":/images/icons/go-last.svg"), "Marcar como Próximo", this);
-    QAction* playThis = new QAction(QIcon(":/images/icons/media-playback-start.svg"), "Tocar Este", this);
-    QAction* monitorThis = new QAction(QIcon(":/images/icons/preferences-desktop-sound.svg"), "Pré Escuta", this);
-    QAction* deleteThis = new QAction(QIcon(":/images/icons/edit-delete.svg"), "Apagar", this);
+    QAction* markHasNext = new QAction(QIcon(":/images/icons/go-last.svg"), tr("Marcar como Próximo"), this);
+    QAction* playThis = new QAction(QIcon(":/images/icons/media-playback-start.svg"), tr("Tocar Este"), this);
+    QAction* monitorThis = new QAction(QIcon(":/images/icons/preferences-desktop-sound.svg"), tr("Pré Escuta"), this);
+    QAction* deleteThis = new QAction(QIcon(":/images/icons/edit-delete.svg"), tr("Apagar"), this);
     menu->addAction( playThis );
     menu->addAction( markHasNext );
     menu->addAction( monitorThis );
@@ -393,10 +415,28 @@ void MainWindow::audioOptionsMenu(QPoint pos)
     menu->addAction( deleteThis );
     menu->popup(ui->audio_list->viewport()->mapToGlobal(pos));
 
-    monitorThis->setEnabled(false);
-
     connect(playThis, &QAction::triggered, this, [=]() {
         onPlaylistItemDoubleClicked(index);
+        ui->audio_list->clearSelection();
+    });
+
+    // Pré-escuta: toca os 15s iniciais do item no preview player (sink
+    // próprio). Clique de novo no mesmo item = para a pré-escuta.
+    connect(monitorThis, &QAction::triggered, this, [=]() {
+        const int row = index.row();
+        if (row < 0 || row >= (int)playlist.size())
+            return;
+        const QString &path = playlist[row].path;
+        if (m_previewPath == path && previewPlayer->playbackState() == QMediaPlayer::PlayingState) {
+            previewPlayer->stop();
+            m_previewPath.clear();
+            ui->audio_list->clearSelection();
+            return;
+        }
+        m_previewPath = path;
+        previewPlayer->setSource(QUrl::fromLocalFile(path));
+        previewPlayer->play();
+        previewTimer->start(15000);
         ui->audio_list->clearSelection();
     });
 
@@ -1236,6 +1276,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
     if (settings->value("autosave/enabled").toBool()) {
         saveAutosavePlaylist();
     }
+    if (previewPlayer) previewPlayer->stop();
     QMainWindow::closeEvent(event);
 }
 

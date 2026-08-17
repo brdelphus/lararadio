@@ -121,6 +121,13 @@ private:
     AudioPlayer audioplayer2;
     QMediaPlayer *timeplayer;
     QAudioOutput *timeAudioOutput;
+    // Preview (pré-escuta): player separado, toca os 15s iniciais de um item
+    // da playlist num sink distinto do broadcast (audio/preview_device;
+    // vazio = dispositivo padrão do sistema, ex. o fone).
+    QMediaPlayer *previewPlayer = nullptr;
+    QAudioOutput *previewOutput = nullptr;
+    QTimer *previewTimer = nullptr;
+    QString m_previewPath;
     std::vector<Playlist> playlist;
 
     QFileSystemModel *model;

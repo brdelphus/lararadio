@@ -240,7 +240,7 @@
     </message>
     <message>
         <location filename="../mainwindow.ui" line="73"/>
-        <location filename="../mainwindow.cpp" line="773"/>
+        <location filename="../mainwindow.cpp" line="813"/>
         <source>Nome</source>
         <translation>Name</translation>
     </message>
@@ -328,7 +328,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
     </message>
     <message>
         <location filename="../mainwindow.ui" line="715"/>
-        <location filename="../mainwindow.cpp" line="1224"/>
+        <location filename="../mainwindow.cpp" line="1264"/>
         <source>Sobre o LaraRadio</source>
         <translation>About LaraRadio</translation>
     </message>
@@ -449,60 +449,80 @@ li.checked::marker { content: &quot;\2612&quot;; }
         <translation>Português do Brasil</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="219"/>
+        <location filename="../mainwindow.cpp" line="241"/>
         <source>Versão: </source>
         <translation>Version: </translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="274"/>
+        <location filename="../mainwindow.cpp" line="296"/>
         <source>Loop</source>
         <translation>Loop</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="282"/>
+        <location filename="../mainwindow.cpp" line="304"/>
         <source>LOOP acionado (fade out da playlist)</source>
         <translation>LOOP triggered (playlist fade out)</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="589"/>
+        <location filename="../mainwindow.cpp" line="407"/>
+        <source>Marcar como Próximo</source>
+        <translation>Mark as Next></translation>
+    </message>
+    <message>
+        <location filename="../mainwindow.cpp" line="408"/>
+        <source>Tocar Este</source>
+        <translation>Play This></translation>
+    </message>
+    <message>
+        <location filename="../mainwindow.cpp" line="409"/>
+        <source>Pré Escuta</source>
+        <translation>Preview></translation>
+    </message>
+    <message>
+        <location filename="../mainwindow.cpp" line="410"/>
+        <source>Apagar</source>
+        <translation>Delete></translation>
+    </message>
+    <message>
+        <location filename="../mainwindow.cpp" line="629"/>
         <source>TALK ON (locução ativada)</source>
         <translation>TALK ON (locution active)</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="593"/>
+        <location filename="../mainwindow.cpp" line="633"/>
         <source>TALK OFF (locução desativada)</source>
         <translation>TALK OFF (locution off)</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="915"/>
+        <location filename="../mainwindow.cpp" line="955"/>
         <source>PLAY [musica] %1</source>
         <translation>PLAY [music] %1</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="946"/>
+        <location filename="../mainwindow.cpp" line="986"/>
         <source>PLAY [vinheta] %1</source>
         <translation>PLAY [jingle] %1</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1065"/>
+        <location filename="../mainwindow.cpp" line="1105"/>
         <source>Hora Certa</source>
         <translation>The Current Time</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1253"/>
-        <location filename="../mainwindow.cpp" line="1263"/>
+        <location filename="../mainwindow.cpp" line="1294"/>
+        <location filename="../mainwindow.cpp" line="1304"/>
         <source>Exportar Log</source>
         <translation>Export Log</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1253"/>
+        <location filename="../mainwindow.cpp" line="1294"/>
         <source>Não foi possível criar:
 %1</source>
         <translation>Could not create:
 %1</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1264"/>
+        <location filename="../mainwindow.cpp" line="1305"/>
         <source>Log exportado com sucesso para:
 %1
 
@@ -513,72 +533,72 @@ li.checked::marker { content: &quot;\2612&quot;; }
 (%2 lines)</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1270"/>
+        <location filename="../mainwindow.cpp" line="1311"/>
         <source>Configurar</source>
         <translation>Configure</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1289"/>
+        <location filename="../mainwindow.cpp" line="1330"/>
         <source>Salvar Arquivo</source>
         <translation>Save File</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1289"/>
-        <location filename="../mainwindow.cpp" line="1406"/>
+        <location filename="../mainwindow.cpp" line="1330"/>
+        <location filename="../mainwindow.cpp" line="1447"/>
         <source>Arquivos de Texto</source>
         <translation>Text Files</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1289"/>
-        <location filename="../mainwindow.cpp" line="1406"/>
+        <location filename="../mainwindow.cpp" line="1330"/>
+        <location filename="../mainwindow.cpp" line="1447"/>
         <source>Todos os arquivos</source>
         <translation>All Files</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1299"/>
+        <location filename="../mainwindow.cpp" line="1340"/>
         <source>Sucesso</source>
         <translation>Success</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1299"/>
+        <location filename="../mainwindow.cpp" line="1340"/>
         <source>Sua playlist foi salva o com sucesso!</source>
         <translation>Your playlist has been saved successfully!</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1303"/>
-        <location filename="../mainwindow.cpp" line="1332"/>
-        <location filename="../mainwindow.cpp" line="1439"/>
+        <location filename="../mainwindow.cpp" line="1344"/>
+        <location filename="../mainwindow.cpp" line="1373"/>
+        <location filename="../mainwindow.cpp" line="1480"/>
         <source>Erro</source>
         <translation>Error</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1303"/>
+        <location filename="../mainwindow.cpp" line="1344"/>
         <source>Não foi possível salvar a playlist.</source>
         <translation>Unable to save playlist.</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1332"/>
-        <location filename="../mainwindow.cpp" line="1439"/>
+        <location filename="../mainwindow.cpp" line="1373"/>
+        <location filename="../mainwindow.cpp" line="1480"/>
         <source>Não foi possível carregar a playlist.</source>
         <translation>Unable to load playlist.</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1395"/>
+        <location filename="../mainwindow.cpp" line="1436"/>
         <source>VINHETA automatica inserida: %1</source>
         <translation>AUTO JINGLE inserted: %1</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1403"/>
+        <location filename="../mainwindow.cpp" line="1444"/>
         <source>Opss</source>
         <translation>Opss</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1403"/>
+        <location filename="../mainwindow.cpp" line="1444"/>
         <source>Não é possivel carregar estando NO AR.</source>
         <translation>It is not possible to charge while in ON AIR.</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="1406"/>
+        <location filename="../mainwindow.cpp" line="1447"/>
         <source>Carregar Playlist</source>
         <translation>Load Playlist</translation>
     </message>
