@@ -37,6 +37,10 @@ ConfigDialog::ConfigDialog(QWidget *parent)
     ui->autoJingleCount->setValue( settings.value("autojingle/count", 1).toInt() );
     ui->autoJingleInterval->setValue( settings.value("autojingle/interval", 5).toInt() );
 
+    ui->streamUrl->setText( settings.value("stream/url").toString() );
+    ui->streamUser->setText( settings.value("stream/user").toString() );
+    ui->streamPass->setText( settings.value("stream/pass").toString() );
+
     connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
 }
 
@@ -63,6 +67,9 @@ void ConfigDialog::accept()
     settings.setValue("autojingle/enabled", ui->autoJingleEnabled->isChecked());
     settings.setValue("autojingle/count", ui->autoJingleCount->value());
     settings.setValue("autojingle/interval", ui->autoJingleInterval->value());
+    settings.setValue("stream/url", ui->streamUrl->text().trimmed());
+    settings.setValue("stream/user", ui->streamUser->text().trimmed());
+    settings.setValue("stream/pass", ui->streamPass->text());
 
     this->close();
 }

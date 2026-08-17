@@ -521,6 +521,35 @@ QSlider::add-page:vertical {
      </size>
     </property>
    </widget>
+   <widget class="QPushButton" name="btn_stream">
+    <property name="geometry">
+     <rect>
+      <x>475</x>
+      <y>160</y>
+      <width>51</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset resource="resources.qrc">
+      <normaloff>:/images/icons/preferences-system-sharing.png</normaloff>:/images/icons/preferences-system-sharing.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>24</width>
+      <height>24</height>
+     </size>
+    </property>
+    <property name="checkable">
+     <bool>true</bool>
+    </property>
+    <property name="toolTip">
+     <string>Ligar/Desligar Stream (Icecast/Shoutcast)</string>
+    </property>
+   </widget>
    <widget class="QPushButton" name="btn_add_item">
     <property name="geometry">
      <rect>

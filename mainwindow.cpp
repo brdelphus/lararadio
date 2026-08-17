@@ -171,6 +171,21 @@ void MainWindow::init()
         m_previewPath.clear();
     });
 
+    // Sink de saída principal (audio/output_device): ex. "broadcast" para
+    // mandar a programação ao Icecast via ffmpeg. Vazio = padrão do sistema.
+    const QString mainDev = settings->value("audio/output_device").toString();
+    if (!mainDev.isEmpty()) {
+        for (const QAudioDevice &d : QMediaDevices::audioOutputs()) {
+            if (d.id().compare(mainDev.toUtf8(), Qt::CaseInsensitive) == 0
+                || d.description().compare(mainDev, Qt::CaseInsensitive) == 0) {
+                audioplayer1.setOutputDevice(d);
+                audioplayer2.setOutputDevice(d);
+                timeAudioOutput->setDevice(d);
+                break;
+            }
+        }
+    }
+
     model = new QFileSystemModel(this);
     model->setRootPath( QDir::homePath() );
     model->setIconProvider(new CustomIconProvider);
@@ -644,6 +659,81 @@ void MainWindow::on_btn_talk_clicked()
         qDebug() << "ON AIR" << (Talking ? "ON" : "OFF") << "->" << script << param;
         QProcess::startDetached(script, QStringList() << param);
     }
+}
+
+// Stream ON/OFF (Icecast/Shoutcast): dispara/para um ffmpeg que captura o
+// monitor do sink de broadcast e envia pro servidor configurado (stream/*).
+// A URL do ConfigDialog aceita protocolo explícito ou assume Icecast.
+void MainWindow::on_btn_stream_clicked()
+{
+    if (m_streamOn) {
+        // Desliga o stream. Desvincula o member e manda o SIGKILL — o signal
+        // finished dispara no event loop e o handler (que usa sender(), nunca
+        // o member) limpa o processo. Sem waitForFinished: bloquear aqui
+        // reentraria o finished com m_streamProc já nulo.
+        QProcess *p = m_streamProc;
+        m_streamProc = nullptr;
+        m_streamOn = false;
+        ui->btn_stream->setChecked(false);
+        ui->btn_stream->setStyleSheet("");
+        if (p) p->kill();
+        addLog(tr("STREAM OFF"));
+        return;
+    }
+
+    const QString url = settings->value("stream/url").toString().trimmed();
+    const QString user = settings->value("stream/user").toString().trimmed();
+    const QString pass = settings->value("stream/pass").toString();
+    if (url.isEmpty()) {
+        QMessageBox::warning(this, tr("Streaming"),
+                             tr("Configure a URL do servidor (Configurações → Streaming) antes de ligar o stream."));
+        ui->btn_stream->setChecked(false);
+        return;
+    }
+
+    // Monta a URL de source: mantém o protocolo explícito, injeta user:pass@
+    // logo após o //. Sem protocolo, assume Icecast.
+    QString target;
+    if (url.contains("://")) {
+        target = url.mid(0, url.indexOf("://") + 3) + user + ":" + pass + "@" + url.mid(url.indexOf("://") + 3);
+    } else {
+        target = "icecast://" + user + ":" + pass + "@" + url;
+    }
+
+    // Fonte de áudio: monitor do sink de broadcast (configurável por máquina).
+    const QString source = settings->value("stream/source", "broadcast.monitor").toString();
+
+    m_streamProc = new QProcess(this);
+    m_streamProc->setProgram("ffmpeg");
+    m_streamProc->setArguments({
+        "-hide_banner", "-loglevel", "error",
+        "-f", "pulse", "-i", source,
+        "-c:a", "libmp3lame", "-b:a", "128k",
+        "-f", "mp3", target
+    });
+    m_streamProc->setProcessChannelMode(QProcess::MergedChannels);
+    connect(m_streamProc, &QProcess::finished, this, [=](int code, QProcess::ExitStatus) {
+        // NUNCA usar m_streamProc aqui: no desligamento manual o member já é
+        // nullptr quando o finished roda. Tudo via sender().
+        QProcess *p = qobject_cast<QProcess *>(sender());
+        const QByteArray out = p ? p->readAllStandardOutput() : QByteArray();
+        if (!out.isEmpty()) qWarning() << "[ffmpeg stream]" << out.constData();
+        // Caiu sozinho (desligamento manual já zerou m_streamOn antes do kill):
+        // desliga o botão e avisa.
+        if (m_streamOn) {
+            addLog(tr("STREAM caiu (ffmpeg exit %1)").arg(code));
+            m_streamOn = false;
+            ui->btn_stream->setChecked(false);
+            ui->btn_stream->setStyleSheet("");
+        }
+        if (p) p->deleteLater();
+    });
+    m_streamProc->start();
+
+    m_streamOn = true;
+    ui->btn_stream->setChecked(true);
+    ui->btn_stream->setStyleSheet("background-color: #0a7d0a;");
+    addLog(tr("STREAM ON (%1)").arg(target));
 }
 
 void MainWindow::setVolumeSpeak(float volume)
@@ -1277,6 +1367,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
         saveAutosavePlaylist();
     }
     if (previewPlayer) previewPlayer->stop();
+    if (m_streamProc) m_streamProc->kill();
     QMainWindow::closeEvent(event);
 }
 

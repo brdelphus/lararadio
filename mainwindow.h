@@ -45,6 +45,7 @@ typedef struct Playlist
 } Playlist;
 
 class QTimer;
+class QProcess;
 
 class MainWindow : public QMainWindow
 {
@@ -92,6 +93,7 @@ private slots:
     void on_btn_remove_item_clicked();
     void on_btn_add_item_clicked();
     void on_btn_talk_clicked();
+    void on_btn_stream_clicked();
     void onFilesItemDoubleClicked(const QModelIndex &index);
     void onJingleFilesItemDoubleClicked(const QModelIndex &index);
     void onPlaylistItemDoubleClicked(const QModelIndex &index);
@@ -178,6 +180,10 @@ private:
 
     // Auto-jingle: insert N jingles every M played tracks (autojingle/*).
     int m_musicCount = 0;
+
+    // Streaming (Icecast/Shoutcast): ffmpeg child capturando o sink broadcast.
+    QProcess *m_streamProc = nullptr;
+    bool m_streamOn = false;
 
     bool m_uiReady = false;
     bool m_recentPlaylistLoaded = false;
