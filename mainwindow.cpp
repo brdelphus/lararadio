@@ -913,6 +913,17 @@ void MainWindow::next()
 
             if(type=="music"){
                 addLog(tr("PLAY [musica] %1").arg(QFileInfo(path).fileName()));
+
+                // Auto-jingle: count played tracks; every N tracks, insert M
+                // random jingles from the jingle dir right after this one.
+                m_musicCount++;
+                if (settings->value("autojingle/enabled").toBool()) {
+                    const int interval = settings->value("autojingle/interval", 5).toInt();
+                    if (m_musicCount >= interval) {
+                        m_musicCount = 0;
+                        insertAutoJingles();
+                    }
+                }
                 if(audioplayer2.isPlaying()){
                     audioplayer1.addMedia( path );
                     audioplayer1.Play();
@@ -1359,6 +1370,31 @@ void MainWindow::loadAutosavePlaylist()
     file.close();
     updateAudioList();
     qInfo() << "Autosave: playlist carregada de" << path << "(" << playlist.size() << "itens)";
+}
+
+// Auto-jingle: pick `count` random audio files from the jingle dir and
+// insert them as jingle items right after the currently playing track.
+// Only inserts what exists — a missing/empty jingle dir is silently skipped.
+void MainWindow::insertAutoJingles()
+{
+    const int count = settings->value("autojingle/count", 1).toInt();
+    const QString jingleDir = settings->value("files/jingleDir", QDir::homePath()).toString();
+
+    QStringList filters;
+    for (const QString &s : kValidAudioSuffixes) filters << "*." + s;
+    const QStringList files = QDir(jingleDir).entryList(filters, QDir::Files, QDir::Name);
+    if (files.isEmpty()) return;
+
+    // Insert immediately after the current track; shift right as we add.
+    int insertRow = current_play + 1;
+    for (int i = 0; i < count; ++i) {
+        const QString file = files.at(QRandomGenerator::global()->bounded(files.size()));
+        const QString fullPath = QDir(jingleDir).absoluteFilePath(file);
+        Playlist item = makePlaylistItem(fullPath, "jingle");
+        playlist.insert(playlist.begin() + insertRow++, item);
+        addLog(tr("VINHETA automatica inserida: %1").arg(QFileInfo(fullPath).fileName()));
+    }
+    updateAudioList();
 }
 
 void MainWindow::loadPlaylist()

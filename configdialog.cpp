@@ -33,6 +33,10 @@ ConfigDialog::ConfigDialog(QWidget *parent)
 
     ui->autosaveEnabled->setChecked( settings.value("autosave/enabled").toBool() );
 
+    ui->autoJingleEnabled->setChecked( settings.value("autojingle/enabled").toBool() );
+    ui->autoJingleCount->setValue( settings.value("autojingle/count", 1).toInt() );
+    ui->autoJingleInterval->setValue( settings.value("autojingle/interval", 5).toInt() );
+
     connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
 }
 
@@ -56,6 +60,9 @@ void ConfigDialog::accept()
     settings.setValue("volume/stopFade", ui->stopFade->isChecked());
     settings.setValue("volume/talkFade", ui->talkFade->isChecked());
     settings.setValue("autosave/enabled", ui->autosaveEnabled->isChecked());
+    settings.setValue("autojingle/enabled", ui->autoJingleEnabled->isChecked());
+    settings.setValue("autojingle/count", ui->autoJingleCount->value());
+    settings.setValue("autojingle/interval", ui->autoJingleInterval->value());
 
     this->close();
 }

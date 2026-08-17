@@ -78,6 +78,7 @@ public slots:
     void loadRecentPlaylist();
     void saveAutosavePlaylist();
     void loadAutosavePlaylist();
+    void insertAutoJingles();
     void clearPlaylist();
     void skipToNext();
     void checkAdvanceTrack();
@@ -167,6 +168,9 @@ private:
 
     // Playback log (exported to a txt in the user's home via ConfigDialog).
     QStringList m_log;
+
+    // Auto-jingle: insert N jingles every M played tracks (autojingle/*).
+    int m_musicCount = 0;
 
     bool m_uiReady = false;
     bool m_recentPlaylistLoaded = false;
