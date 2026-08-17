@@ -188,6 +188,7 @@ private:
     QProcess *m_streamProc = nullptr;
     bool m_streamOn = false;
     QNetworkAccessManager *m_net = nullptr;
+    QTimer *m_metaRetryTimer = nullptr;
 
     bool m_uiReady = false;
     bool m_recentPlaylistLoaded = false;

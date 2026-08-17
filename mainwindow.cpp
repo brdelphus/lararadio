@@ -194,6 +194,9 @@ void MainWindow::init()
     updateStreamButtonState();
 
     m_net = new QNetworkAccessManager(this);
+    m_metaRetryTimer = new QTimer(this);
+    m_metaRetryTimer->setSingleShot(true);
+    connect(m_metaRetryTimer, &QTimer::timeout, this, [=]() { updateStreamMetadata(); });
 
     model = new QFileSystemModel(this);
     model->setRootPath( QDir::homePath() );
@@ -689,9 +692,15 @@ void MainWindow::updateStreamButtonState()
 // Atualiza o "curr playing" (título) do mount no Icecast via /admin/metadata.
 // O source autentica com as próprias credenciais. Só Icecast — Shoutcast tem
 // protocolo próprio de metadata, não suportado aqui.
+// Retry: logo após ligar o stream o ffmpeg ainda não conectou (mount não
+// existe) e o Icecast rejeita — se o HTTP não for 2xx, re-agenda em 2s.
 void MainWindow::updateStreamMetadata()
 {
     if (!m_streamOn || !m_net) return;
+    // Já tem um retry pendente? Esta chamada é o retry (timer singleShot já
+    // disparou quando chega aqui) — mas se veio de um play novo enquanto o
+    // retry está agendado, deixa o retry pendente cuidar (lê a música atual).
+    if (m_metaRetryTimer->isActive()) return;
     const QString url = settings->value("stream/url").toString().trimmed();
     if (url.isEmpty() || url.contains("shoutcast://")) return;
     if (current_play < 0 || current_play >= (int)playlist.size()) return;
@@ -719,7 +728,12 @@ void MainWindow::updateStreamMetadata()
     req.setRawHeader("Authorization",
                      "Basic " + QString(user + ":" + pass).toUtf8().toBase64());
     QNetworkReply *reply = m_net->get(req);
-    connect(reply, &QNetworkReply::finished, reply, &QObject::deleteLater);
+    connect(reply, &QNetworkReply::finished, this, [=]() {
+        const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        if ((status < 200 || status >= 300) && m_streamOn)
+            m_metaRetryTimer->start(2000);
+        reply->deleteLater();
+    });
 }
 
 // Stream ON/OFF (Icecast/Shoutcast): dispara/para um ffmpeg que captura o
