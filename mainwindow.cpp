@@ -752,6 +752,19 @@ void MainWindow::on_btn_stream_clicked()
         return;
     }
 
+    // Mata ffmpeg ÓRFÃO de sessão anterior: app morto com kill -9 não mata o
+    // filho, que continua segurando o mount ("Mountpoint in use" no Icecast).
+    QFile pidFile(QDir::tempPath() + "/lararadio_stream.pid");
+    if (pidFile.exists()) {
+        const qint64 oldPid = pidFile.readAll().trimmed().toLongLong();
+        if (oldPid > 0) {
+            QProcess *killer = new QProcess(this);
+            killer->start("kill", {"-9", QString::number(oldPid)});
+            connect(killer, &QProcess::finished, killer, &QObject::deleteLater);
+        }
+        pidFile.remove();
+    }
+
     // Monta a URL de source: mantém o protocolo explícito, injeta user:pass@
     // logo após o //. Sem protocolo, assume Icecast.
     QString target;
@@ -799,9 +812,21 @@ void MainWindow::on_btn_stream_clicked()
             ui->btn_stream->setChecked(false);
             ui->btn_stream->setStyleSheet("");
         }
-        if (p) p->deleteLater();
+        if (p) {
+            // Limpa o lock se este era o processo registrado.
+            QFile pidFile(QDir::tempPath() + "/lararadio_stream.pid");
+            if (pidFile.exists() && pidFile.readAll().trimmed().toLongLong() == p->processId())
+                pidFile.remove();
+            p->deleteLater();
+        }
     });
     m_streamProc->start();
+    // Registra o PID no lock pra limpar órfãos na próxima sessão.
+    QFile pidOut(QDir::tempPath() + "/lararadio_stream.pid");
+    if (pidOut.open(QIODevice::WriteOnly)) {
+        pidOut.write(QString::number(m_streamProc->processId()).toUtf8());
+        pidOut.close();
+    }
 
     m_streamOn = true;
     ui->btn_stream->setChecked(true);
