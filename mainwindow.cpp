@@ -722,6 +722,7 @@ void MainWindow::on_btn_stream_clicked()
     m_streamProc->setProgram("ffmpeg");
     m_streamProc->setArguments({
         "-hide_banner", "-loglevel", "error",
+        "-user_agent", "LaraRadio",
         "-f", "pulse", "-i", source,
         "-c:a", "libmp3lame", "-b:a", "128k",
         "-f", "mp3", target
